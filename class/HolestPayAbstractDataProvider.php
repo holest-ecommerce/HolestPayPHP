@@ -4,78 +4,78 @@
 * -------------------------------------------------
 * File Version: 1.0.1
 **/
-namespace HolestPay;
+namespace holestpay;
 
 abstract class HolestPayAbstractDataProvider {
-  /**
-   * writes current user displayable payment information for order as HTML 
-   * 
-   * @param string $order_uid - order unique identifikator
-   * @param string $html - html (use at lest mediumtext for DB!)
-   * @return bool - true on success , false on failure
-   */
+/**
+ * writes current user displayable payment information for order as HTML 
+ * 
+ * @param string $order_uid - order unique identifikator
+ * @param string $html - html (use at lest mediumtext for DB!)
+ * @return bool - true on success , false on failure
+ */
   abstract public function writePaymentResponseHTML($order_uid, $html);
 
-  /**
-   * writes current user displayable fiscal or integration methods (for mutiple methods output is combined) information for order as HTML 
-   * 
-   * @param string $order_uid - order unique identifikator
-   * @param string $html - html (use at lest mediumtext for DB!)
-   * @return bool - true on success , false on failure
-   */
+/**
+ * writes current user displayable fiscal or integration methods (for mutiple methods output is combined) information for order as HTML 
+ * 
+ * @param string $order_uid - order unique identifikator
+ * @param string $html - html (use at lest mediumtext for DB!)
+ * @return bool - true on success , false on failure
+ */
   abstract public function writeFiscalOrIntegrationResponseHTML($order_uid, $html);
 
-   /**
-   * writes current user displayable shipping method  (for mutiple methods output is combined)  information for order as HTML 
-   * 
-   * @param string $order_uid - order unique identifikator
-   * @param string $html - html (use at lest mediumtext for DB!)
-   * @return bool - true on success , false on failure
-   */
+/**
+ * writes current user displayable shipping method  (for mutiple methods output is combined)  information for order as HTML 
+ * 
+ * @param string $order_uid - order unique identifikator
+ * @param string $html - html (use at lest mediumtext for DB!)
+ * @return bool - true on success , false on failure
+ */
   abstract public function writeShippingResponseHTML($order_uid, $html);
 
-  /**
-   * gets current user displayable payment information for order as HTML. Empty if does not exists 
-   * 
-   * @param string $order_uid - order unique identifikator
-   * @return string - current HTML for payment info. Empty if nothing exists 
-   */
+/**
+ * gets current user displayable payment information for order as HTML. Empty if does not exists 
+ * 
+ * @param string $order_uid - order unique identifikator
+ * @return string - current HTML for payment info. Empty if nothing exists 
+ */
   abstract public function getPaymentResponseHTML($order_uid);
 
-  /**
-   * gets current user displayable fiscal or integration methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
-   * 
-   * @param string $order_uid - order unique identifikator
-   * @return string - current HTML for fiscal or integration methods information info. Empty if nothing exists
-   */
+/**
+ * gets current user displayable fiscal or integration methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
+ * 
+ * @param string $order_uid - order unique identifikator
+ * @return string - current HTML for fiscal or integration methods information info. Empty if nothing exists
+ */
   abstract public function getFiscalOrIntegrationResponseHTML($order_uid);
 
-  /**
-   * gets current user displayable shipping methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
-   * 
-   * @param string $order_uid - order unique identifikator
-   * @return string- current HTML for shipping methods information info. Empty if nothing exists
-   */
+/**
+ * gets current user displayable shipping methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
+ * 
+ * @param string $order_uid - order unique identifikator
+ * @return string- current HTML for shipping methods information info. Empty if nothing exists
+ */
   abstract public function getShippingResponseHTML($order_uid);
 
 /**
-   * writes excahnge rate and its timestamp to cache 
-   * 
-   * @param string[3] $form - uppercase 3 letter code of source currency like EUR, USD, RSD, BAM, MKD,...
-   * @param string[3] $to - uppercase 3 letter code of destination currency like EUR, USD, RSD, BAM, MKD,...
-   * @param float|array $rate - raw convestion rate, or array("rate" => 0.322234, "ts" => time())
-   * @param int $ts - time of rate as php timestamp (time() function)
-   * @return assoc_array array("rate" => 0.322234, "ts" => time())
-   */
+ * writes excahnge rate and its timestamp to cache 
+ * 
+ * @param string[3] $form - uppercase 3 letter code of source currency like EUR, USD, RSD, BAM, MKD,...
+ * @param string[3] $to - uppercase 3 letter code of destination currency like EUR, USD, RSD, BAM, MKD,...
+ * @param float|array $rate - raw convestion rate, or array("rate" => 0.322234, "ts" => time())
+ * @param int $ts - time of rate as php timestamp (time() function)
+ * @return assoc_array array("rate" => 0.322234, "ts" => time())
+ */
   abstract public function cacheExchnageRate($form, $to, $rate, $ts = time());
 
 /**
-   * reads excahnge rate and its timestamp from cache. Important: this function does not check ts. If you use you custom data provider you must check if fresh excahnge rate need to be read again and written to cache. Default data providers use excahnge_rate_cache_h parameter to set how long exchange rate is considered valid
-   * 
-   * @param string[3] $form - uppercase 3 letter code of source currency like EUR, USD, RSD, BAM, MKD,...
-   * @param string[3] $to - uppercase 3 letter code of destination currency like EUR, USD, RSD, BAM, MKD,...
-   * @return assoc_array array("rate" => 0.322234, "ts" => time())
-   */
+ * reads excahnge rate and its timestamp from cache. Important: this function does not check ts. If you use you custom data provider you must check if fresh excahnge rate need to be read again and written to cache. Default data providers use excahnge_rate_cache_h parameter to set how long exchange rate is considered valid
+ * 
+ * @param string[3] $form - uppercase 3 letter code of source currency like EUR, USD, RSD, BAM, MKD,...
+ * @param string[3] $to - uppercase 3 letter code of destination currency like EUR, USD, RSD, BAM, MKD,...
+ * @return assoc_array array("rate" => 0.322234, "ts" => time())
+ */
   abstract public function readExchnageRate($form, $to);
 
 /**
@@ -85,20 +85,20 @@ abstract class HolestPayAbstractDataProvider {
  */
   abstract public function getResultsForOrder($order_uid);
 
-  /**
-   * writes all received results from HolestPay to data storage (existing & new). 
-   * @param string $order_uid - order unique identifikator
-   * @param array $results - all results received from HolestPay
-   * @return bool- true on success , false on failure
-   */
+/**
+ * writes all received results from HolestPay to data storage (existing & new). 
+ * @param string $order_uid - order unique identifikator
+ * @param array $results - all results received from HolestPay
+ * @return bool- true on success , false on failure
+ */
   abstract public function writeResultsForOrder($order_uid, $results);
 
-  /**
-   * appends received result from HolestPay to data storage (existing & new). Function should check if result is already recived and skip writting in that case or better overwrite previous
-   * @param string $order_uid - order unique identifikator
-   * @param assoc_array $result - most recent result
-   * @return bool - true if write happened , false on skip
-   */
+/**
+ * appends received result from HolestPay to data storage (existing & new). Function should check if result is already recived and skip writting in that case or better overwrite previous
+ * @param string $order_uid - order unique identifikator
+ * @param assoc_array $result - most recent result
+ * @return bool - true if write happened , false on skip
+ */
   abstract public function appendResultForOrder($order_uid, $result);
 
  /**
@@ -160,50 +160,55 @@ abstract class HolestPayAbstractDataProvider {
  */  
   abstract public function getHCart($order_uid_or_site_order_or_site_cart);
 
- /**
-  * gets array of vault references for user to be used for charge or presented user to choose from. $user_uid is usually email. 
-  * @param string $user_uid - user identifier / usually email
-  * @return assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
-  */ 
+/**
+* gets array of vault references for user to be used for charge or presented user to choose from. $user_uid is usually email. 
+* @param string $user_uid - user identifier / usually email
+* @return assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
+*/ 
   abstract public function getVaultReferences($user_uid);
 
- /**
-  * adds vault references for user to be used for future charges. $user_uid is usually email.
-  * @param string $user_uid - user identifier / usually email
-  * @param assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for 
-  * @return bool - true on success , false on failure
-  */  
+/**
+* adds vault references for user to be used for future charges. $user_uid is usually email.
+* @param string $user_uid - user identifier / usually email
+* @param assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for 
+* @return bool - true on success , false on failure
+*/  
   abstract public function addVaultReference($user_uid, $vault_data);
  
-  /**
-  * removes vault reference by its value 
-  * @param string $vault_ref - value of vault reference pointer itself
-  * @return bool - true on real delete happened, otherwise false
-  */  
+/**
+* removes vault reference by its value 
+* @param string $vault_ref - value of vault reference pointer itself
+* @return bool - true on real delete happened, otherwise false
+*/  
   abstract public function removeVaultReference($vault_ref);
 
-  /**
-  * updates vault reference by its value 
-  * @param string $vault_ref - value of vault reference pointer itself
-  * @param assoc_array $vault_data - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
-  * @return bool - true on success, false on failure
-  */  
+/**
+* updates vault reference by its value 
+* @param string $vault_ref - value of vault reference pointer itself
+* @param assoc_array $vault_data - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
+* @return bool - true on success, false on failure
+*/  
   abstract public function updateVaultReference($vault_ref, $vault_data);
 
-
-  /**
-   * PCI DSS 4.0.+ requires script integrity check to prevent CDN file modifiation and XSS attacks. This function will be used to store script integrity value for all scripts you load from HolestPay CDN. If integrity script tag attribute is wrong script will not be executed by browsers.
-   * @param string $script_handle - may be 'hpay' OR 'hpay.clientadmin.ui' OR your custom script handle where you can use HolestPayUtils::CalculateScriptIntegrity(script_url) function for other external scripts in moment when you turst them and when you are sure they are not modified by attackers. 
-   * @param string $integrity_hash - value for script tag integrity attribute obtained from HolestPay in secure way for 'hpay'|'hpay.clientadmin.ui' or calculated by you for other scripts
-   * @return bool - true on success, false on failure
-   */
+/**
+ * PCI DSS 4.0.+ requires script integrity check to prevent CDN file modifiation and XSS attacks. This function will be used to store script integrity value for all scripts you load from HolestPay CDN. If integrity script tag attribute is wrong script will not be executed by browsers.
+ * @param string $script_handle - may be 'hpay' OR 'hpay.clientadmin.ui' OR your custom script handle where you can use HolestPayUtils::CalculateScriptIntegrity(script_url) function for other external scripts in moment when you turst them and when you are sure they are not modified by attackers. 
+ * @param string $integrity_hash - value for script tag integrity attribute obtained from HolestPay in secure way for 'hpay'|'hpay.clientadmin.ui' or calculated by you for other scripts
+ * @return bool - true on success, false on failure
+ */
   abstract public function setScriptIntegrityHash($script_handle, $integrity_hash);
 
-  /**
-   * PCI DSS 4.0.+ requires script integrity check to prevent CDN file modifiation and XSS attacks. Use this to get value integrity attribute of script tag that points to script loaded from HolestPay servers
-   * @param string $script_handle - may be 'hpay' OR 'hpay.clientadmin.ui'
-   * @return string - value for script tag integrity attribute obtained from HolestPay in secure way
-   */
+/**
+ * PCI DSS 4.0.+ requires script integrity check to prevent CDN file modifiation and XSS attacks. Use this to get value integrity attribute of script tag that points to script loaded from HolestPay servers
+ * @param string $script_handle - may be 'hpay' OR 'hpay.clientadmin.ui'
+ * @return string - value for script tag integrity attribute obtained from HolestPay in secure way
+ */
   abstract public function getScriptIntegrityHash($script_handle);
 
+
+ /**
+ * returns site language
+ * @return string - language, should be 2 lowercase letters language code like 'rs','en','de','mk','el'... 
+ */
+  abstract public function getLanguage();
 }

@@ -9,7 +9,7 @@
 * Author URL: https://ecommerce.holest.com/ 
 * PHP 7,8,9
 **/
-namespace HolestPay;
+namespace holestpay;
 
 if(!defined('HOLESTPAYLIB')){
 	define('HOLESTPAYLIB',__FILE__);
@@ -18,7 +18,7 @@ if(!defined('HOLESTPAYLIB')){
     public class HolestPay{
         private static $_instance;
         private static $_config;
-        
+
         //TRAITS///////////////////////////////////////
         use HolestPayCore;
         ///////////////////////////////////////////////
