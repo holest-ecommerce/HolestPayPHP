@@ -1,4 +1,9 @@
 <?php
+/**
+* HolestPay PHP lib
+* -------------------------------------------------
+* File Version: 1.0.1
+**/
 namespace holestpay;
 
 if(!defined('HOLESTPAYLIB')){
