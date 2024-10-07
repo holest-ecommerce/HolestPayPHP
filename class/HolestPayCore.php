@@ -10,7 +10,7 @@ if(!defined('HOLESTPAYLIB')){
     die("Direct access to this file is not allowed");
 }
 
-public trait HolestPayCore{
+trait HolestPayCore{
     private $_webResultHandlerCalled = false;
 
     /**

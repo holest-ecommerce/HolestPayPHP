@@ -8,7 +8,7 @@ namespace holestpay;
 
 require_once(__DIR__ . "/../class/HolestPayAbstractDataProvider.php");
 
-public class FileSystemDataProvider extends HolestPayAbstractDataProvider{
+class FileSystemDataProvider extends HolestPayAbstractDataProvider{
  private $lib_configuration = null;
  
  /**
@@ -79,7 +79,7 @@ public class FileSystemDataProvider extends HolestPayAbstractDataProvider{
  * @param int $ts - time of rate as php timestamp (time() function)
  * @return assoc_array array("rate" => 0.322234, "ts" => time())
  */
-  public function cacheExchnageRate($form, $to, $rate, $ts = time()){}
+  public function cacheExchnageRate($form, $to, $rate, $ts = null){}
 
 /**
  * reads excahnge rate and its timestamp from cache. Important: this function does not check ts. If you use you custom data provider you must check if fresh excahnge rate need to be read again and written to cache. Default data providers use excahnge_rate_cache_h parameter to set how long exchange rate is considered valid

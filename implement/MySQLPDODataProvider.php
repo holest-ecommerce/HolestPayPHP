@@ -7,7 +7,7 @@
 namespace holestpay;
 
 require_once(__DIR__ . "/../class/HolestPayAbstractDataProvider.php");
-public class MySQLPDODataProvider extends HolestPayAbstractDataProvider{
+class MySQLPDODataProvider extends HolestPayAbstractDataProvider{
   private $lib_configuration = null;
  
 /**
@@ -27,13 +27,7 @@ public class MySQLPDODataProvider extends HolestPayAbstractDataProvider{
  */
  public function writePaymentResponseHTML($order_uid, $html){}
 
-/**
- * Provider constructior. You should never call this constructor yourself. HolestPayLib will call it internaly, and you only set data_provider_class lig configuration parameter to this file name / class name (file name / class name must be same)
- * @param assoc_array $lib_configuration - library configuration
- */
- public function __construct($lib_configuration){
-    //
- }
+
 
 /**
  * writes current user displayable fiscal or integration methods (for mutiple methods output is combined) information for order as HTML 
@@ -86,7 +80,7 @@ public class MySQLPDODataProvider extends HolestPayAbstractDataProvider{
  * @param int $ts - time of rate as php timestamp (time() function)
  * @return assoc_array array("rate" => 0.322234, "ts" => time())
  */
-  public function cacheExchnageRate($form, $to, $rate, $ts = time()){}
+  public function cacheExchnageRate($form, $to, $rate, $ts = null){}
 
 /**
  * reads excahnge rate and its timestamp from cache. Important: this function does not check ts. If you use you custom data provider you must check if fresh excahnge rate need to be read again and written to cache. Default data providers use excahnge_rate_cache_h parameter to set how long exchange rate is considered valid

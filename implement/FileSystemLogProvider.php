@@ -7,7 +7,7 @@
 namespace holestpay;
 
 require_once(__DIR__ . "/../class/HolestPayAbstractLogProvider.php");
-public class FileSystemLogProvider extends HolestPayAbstractLogProvider{
+class FileSystemLogProvider extends HolestPayAbstractLogProvider{
     private $lib_configuration = null;
  
     /**

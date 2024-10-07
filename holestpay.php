@@ -15,7 +15,7 @@ if(!defined('HOLESTPAYLIB')){
 	define('HOLESTPAYLIB',__FILE__);
     require_once(__DIR__ . "/class/HolestPayCore.php");
     
-    public class HolestPayLib{
+    class HolestPayLib{
         private static $_instance = null;
         private static $_config = null;
 
@@ -79,7 +79,7 @@ if(!defined('HOLESTPAYLIB')){
                 return null;
 
             if($reset){
-                HolestPayLib::_config = null;
+                HolestPayLib::$_config = null;
             }    
 
             $cfg = null;
@@ -140,8 +140,8 @@ if(!defined('HOLESTPAYLIB')){
 
                             if(class_exists($class_name)){
                                 //////////////////////////////////////////////////////////////////
-                                HolestPayLib::_config   = $cfg;
-                                HolestPayLib::_data_provider = new $class_name(HolestPayLib::_config);
+                                HolestPayLib::$_config   = $cfg;
+                                HolestPayLib::$_data_provider = new $class_name(HolestPayLib::_config);
                                 //////////////////////////////////////////////////////////////////    
                             }else{
                                 $err = "data_provider_class {$class_name} not found in " . $provider_class_file . ".php";
@@ -181,7 +181,7 @@ if(!defined('HOLESTPAYLIB')){
     
                                 if(class_exists($class_name)){
                                     //////////////////////////////////////////////////////////////////
-                                    HolestPayLib::_log_provider = new $class_name(HolestPayLib::_config);
+                                    HolestPayLib::$_log_provider = new $class_name(HolestPayLib::_config);
                                     //////////////////////////////////////////////////////////////////    
                                 }
                             }
