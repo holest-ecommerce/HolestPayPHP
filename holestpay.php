@@ -14,6 +14,8 @@ namespace holestpay;
 if(!defined('HOLESTPAYLIB')){
 	define('HOLESTPAYLIB',__FILE__);
     require_once(__DIR__ . "/class/HolestPayCore.php");
+    require_once(__DIR__ . "/class/HolestPayConversion.php");
+    require_once(__DIR__ . "/class/HolestPayNet.php");
     
     class HolestPayLib{
         private static $_instance = null;
@@ -28,6 +30,8 @@ if(!defined('HOLESTPAYLIB')){
 
         //TRAITS///////////////////////////////////////
         use HolestPayCore;
+        use HolestPayConversion;
+        use HolestPayNet;
         ///////////////////////////////////////////////
         
         /**
