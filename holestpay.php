@@ -75,7 +75,7 @@ if(!defined('HOLESTPAYLIB')){
          */
         public static function init($config = null, $reset = false){
             //ALREADY CONFIGURED AND NO RESET REQUESTED
-            if(HolestPayLib::_config && !$reset)
+            if(HolestPayLib::$_config && !$reset)
                 return null;
 
             if($reset){
@@ -83,16 +83,20 @@ if(!defined('HOLESTPAYLIB')){
             }    
 
             $cfg = null;
+            $cfg_source = "";
 
             if($config){
                 if(is_string($config)){
                     $config = trim($config);
                     if(substr($config,0,1) == "{" && substr($config,-1) == "}"){
+                        $cfg_source = '$config param - json string';
                         $cfg = json_decode($config, true);
                     }else if(file_exists($config)){
                         if(strtolower(substr($config,-4)) == ".ini"){
+                            $cfg_source = '$config param - custom ini path';
                             $cfg = parse_ini_file($config);
                         }else{
+                            $cfg_source = '$config param - custom json file';
                             //if .ini is not exenstion then JSON
                             $jcnt = @file_get_contents($config); 
                             if($jcnt){
@@ -104,12 +108,15 @@ if(!defined('HOLESTPAYLIB')){
                         } 
                     }
                 }else if(is_array($config)){
+                    $cfg_source = '$config param - assoc_array';
                     $cfg = $config;
                 }else if(is_object($config)){
+                    $cfg_source = '$config param - object';
                     $cfg = (array)$config;
                 }
             }else{
                 if(file_exists(__DIR__ ."/holestpay.ini")){
+                    $cfg_source = "default lib's holestpay.ini";
                     $cfg = parse_ini_file(__DIR__ ."/holestpay.ini");
                 }
             }
@@ -136,15 +143,15 @@ if(!defined('HOLESTPAYLIB')){
                         if($provider_class_file){
                             require_once($provider_class_file);
                             $path_parts = pathinfo($provider_class_file);
-                            $class_name = $path_parts['filename'];
+                            $class_name = $cfg['data_provider_class_namespace'] ."\\". $path_parts['filename'];
 
                             if(class_exists($class_name)){
                                 //////////////////////////////////////////////////////////////////
                                 HolestPayLib::$_config   = $cfg;
-                                HolestPayLib::$_data_provider = new $class_name(HolestPayLib::_config);
+                                HolestPayLib::$_data_provider = new $class_name(HolestPayLib::$_config);
                                 //////////////////////////////////////////////////////////////////    
                             }else{
-                                $err = "data_provider_class {$class_name} not found in " . $provider_class_file . ".php";
+                                $err = "data_provider_class {$class_name} not found in " . $provider_class_file ;
                             }
                         }else{
                             $err = "data_provider_class php file not found: " . $provider_class_file;
@@ -177,11 +184,11 @@ if(!defined('HOLESTPAYLIB')){
                             if($log_class_file){
                                 require_once($log_class_file);
                                 $path_parts = pathinfo($log_class_file);
-                                $class_name = $path_parts['filename'];
+                                $class_name = $cfg['log_provider_class_namespace'] ."\\". $path_parts['filename'];
     
                                 if(class_exists($class_name)){
                                     //////////////////////////////////////////////////////////////////
-                                    HolestPayLib::$_log_provider = new $class_name(HolestPayLib::_config);
+                                    HolestPayLib::$_log_provider = new $class_name(HolestPayLib::$_config);
                                     //////////////////////////////////////////////////////////////////    
                                 }
                             }
@@ -193,9 +200,9 @@ if(!defined('HOLESTPAYLIB')){
                     return true;
                 }
 
-                throw new Exception("HOLESTPAYLIB: {$err}!");
+                throw new \Exception("HOLESTPAYLIB: {$err}!");
             }else{
-                throw new Exception('HOLESTPAYLIB: unable to load configuration. Non existing ini file on path or file with json-content file path or content that was read was unparsable!');
+                throw new \Exception('HOLESTPAYLIB: unable to load library configuration! Configuration source: ' . $cfg_source);
             }
         }
         
