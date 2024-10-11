@@ -52,8 +52,8 @@ trait HolestPayConversion{
 			return 0;
 		
 		$unit = strtolower(trim($unit));
-		if(isset(HolestPayLib::$TO_GRAM_UNIT_CONVERT[$unit])){
-			return HolestPayLib::$TO_GRAM_UNIT_CONVERT[$unit] * $value;
+		if(isset(self::$TO_GRAM_UNIT_CONVERT[$unit])){
+			return self::$TO_GRAM_UNIT_CONVERT[$unit] * $value;
 		}
 		return $value;
 	}
@@ -63,8 +63,8 @@ trait HolestPayConversion{
 			return 0;
 		
 		$unit = strtolower(trim($unit));
-		if(isset(HolestPayLib::$TO_CM_UNIT_CONVERT[$unit])){
-			return HolestPayLib::$TO_CM_UNIT_CONVERT[$unit] * $value;
+		if(isset(self::$TO_CM_UNIT_CONVERT[$unit])){
+			return self::$TO_CM_UNIT_CONVERT[$unit] * $value;
 		}
 		return $value;
 	}

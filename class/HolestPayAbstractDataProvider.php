@@ -220,13 +220,13 @@ abstract class HolestPayAbstractDataProvider {
   abstract public function getLanguage();
 
 /**
- * loads POS(site) configuration from data storage
+ * loads POS(site) configuration from permanent data storage
  * @return assoc_array - POS configuration
  */
   abstract public function loadPOSConfiguration();
 
 /**
- * writes POS(site) configuration to data storage
+ * writes POS(site) configuration to permanent data storage
  * @param string|assoc_array $pos_configuration - POS configuration to set. If string it will be JSON deserialized. If you use single filed for it in DB make sure it can accept large amount of data. At least mediumtext
  * @return assoc_array - POS configuration that was set
  */

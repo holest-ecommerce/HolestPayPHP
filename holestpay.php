@@ -71,6 +71,14 @@ if(!defined('HOLESTPAYLIB')){
         }
 
         /**
+         * returns current data provider instance
+         * @return \holestpay\HolestPayAbstractDataProvider
+         */
+        public static function dataProvider(){
+            return self::$_data_provider;
+        }
+
+        /**
          * Initializes the library from confg. This is the library config, and not the SITE/POS HPay config
          * 
          * @param string $config - if null|empty then define HOLESTPAYLIB_CONFIG_SOURCE be used which is by default holestpay.ini from this folder. You can pass file location (with ini, or json context), JSON string, ASOC Array or Object with config. If ini file path is used then .ini file extension is required.
