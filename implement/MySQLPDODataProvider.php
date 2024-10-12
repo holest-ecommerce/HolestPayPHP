@@ -5,7 +5,9 @@
 * File Version: 1.0.1
 **/
 namespace holestpay;
-
+if(!defined('HOLESTPAYLIB')){
+  die("Direct access to this file is not allowed");
+}
 require_once(__DIR__ . "/../class/HolestPayAbstractDataProvider.php");
 class MySQLPDODataProvider extends HolestPayAbstractDataProvider{
   private $lib_configuration = null;
@@ -231,21 +233,22 @@ class MySQLPDODataProvider extends HolestPayAbstractDataProvider{
 
   }
 
+/**
+ * loads site HPay configuration from permanent data storage
+ * @return assoc_array - HPay site configuration
+ */
+public function loadSiteConfiguration(){
+
+}
 
 /**
- * loads POS(site) configuration from data permanent storage
- * @return assoc_array - POS configuration
+ * writes site HPay configuration to permanent data storage
+ * @param string|assoc_array $site_configuration - configuration to set including POS setup. If string it will be JSON deserialized. If you use single filed for it in DB make sure it can accept large amount of data. At least mediumtext
+ * @return assoc_array - Site configuration that was set
  */
-  public function loadPOSConfiguration(){
-    
-  }
+public function setSiteConfiguration($site_configuration){
 
-/**
- * writes POS(site) configuration to data permanent storage
- * @param string|assoc_array $pos_configuration - POS configuration to set. If string it will be JSON deserialized. If you use single filed for it in DB make sure it can accept large amount of data. At least mediumtext
- * @return assoc_array - POS configuration that was set
- */
-  public function setPOSConfiguration($pos_configuration){
-    
-  }
+
+}
+
 }

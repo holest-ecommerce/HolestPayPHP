@@ -79,6 +79,44 @@ if(!defined('HOLESTPAYLIB')){
         }
 
         /**
+         * returns current log provider instance
+         * @return \holestpay\HolestPayAbstractLogProvider
+         */
+        public static function logProvider(){
+            return self::$_log_provider;
+        }
+
+        /**
+         * returns current lib configuration
+         * @return \holestpay\HolestPayAbstractLogProvider
+         */
+        public static function libConfig(){
+            return self::$_config;
+        }
+
+
+        /**
+         * @param string $logscope - can be just "error"|"waring"|"log" or something like "order_4635764_result"
+         * @param any $data - data to log 
+         * @param int? $stack - level of call stack to also include
+         * @return bool - true on successful write
+         */
+        public static function writeLog($logscope, $data, $stack = null ){
+            if(HolestPayLib::logProvider()){
+                if(intval($stack)){
+                $s = debug_backtrace(2,intval($stack) + 1);
+                $data =  array(
+                    "@" => $data,
+                    "backtrace" => array_shift($s)
+                );
+                }
+                return HolestPayLib::logProvider()->writeLog($logscope, $data);
+            }else{
+                return false;
+            }
+        }
+
+        /**
          * Initializes the library from confg. This is the library config, and not the SITE/POS HPay config
          * 
          * @param string $config - if null|empty then define HOLESTPAYLIB_CONFIG_SOURCE be used which is by default holestpay.ini from this folder. You can pass file location (with ini, or json context), JSON string, ASOC Array or Object with config. If ini file path is used then .ini file extension is required.
