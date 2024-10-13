@@ -223,6 +223,12 @@ trait HolestPayCore{
         return $this->_HSiteConfig;
     }
 
+    /**
+     * Gets current exchange rate $from -> $to
+     * @param string $from - form currency EUR, USD, GBP...
+     * @param string $to - to currentcy RSD, BAM, MKD...
+     * @return float - rate
+     */
     public static function getExchnageRate($from, $to){
         $from   = strtoupper(trim($from)); 
 		$to     = strtoupper(trim($to)); 
@@ -300,6 +306,12 @@ trait HolestPayCore{
         return null;
     }
 
+    /**
+     * Gets current exchange rate $from -> $to but woth respect to exchange rate correction set for POS
+     * @param string $from - form currency EUR, USD, GBP...
+     * @param string $to - to currentcy RSD, BAM, MKD...
+     * @return float - rate
+     */
     public static function getMerchantExchnageRate($from, $to){
 		$rate = HolestPayLib::getExchnageRate($from, $to);
 		if($rate === null){
@@ -313,11 +325,91 @@ trait HolestPayCore{
 		return $rate;
 	}
 
-    public function onOrderUpdate(){
+    /**
+     * reads array of all results received from HolestPay in the chronological order. Result may or may not contain payment transaction. You can have your custom storage for them but it is important to have one field that may accept full result JSON (so at least mediumtext if db is used) 
+     * @param string $order_uid - order unique identifikator
+     * @return array array( [{ ...result: ... },...] )
+     */
+    public function getResultsForOrder($order_uid){
+        return HolestPayLib::dataProvider()->getResultsForOrder($order_uid);
+    }
+
+    /**
+     * gets current user displayable payment information for order as HTML. Empty if does not exists 
+     * 
+     * @param string $order_uid - order unique identifikator
+     * @return string - current HTML for payment info. Empty if nothing exists 
+     */
+    public function getPaymentResponseHTML($order_uid){
+        return HolestPayLib::dataProvider()->getPaymentResponseHTML($order_uid);
+    }
+
+    /**
+     * gets current user displayable fiscal or integration methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
+     * 
+     * @param string $order_uid - order unique identifikator
+     * @return string - current HTML for fiscal or integration methods information info. Empty if nothing exists
+     */
+    public function getFiscalOrIntegrationResponseHTML($order_uid){
+        return HolestPayLib::dataProvider()->getFiscalOrIntegrationResponseHTML($order_uid);
+    }
+
+    
+    /**
+     * gets current user displayable shipping methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
+     * 
+     * @param string $order_uid - order unique identifikator
+     * @return string- current HTML for shipping methods information info. Empty if nothing exists
+     */
+     public function getShippingResponseHTML($order_uid){
+        return HolestPayLib::dataProvider()->getShippingResponseHTML($order_uid);
+     }
+
+     /**
+     * gets HPay status. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default its string, but you may get it as array is you set second prameter as true. In that case you will get array like this array("PAYMENT" => "--PAYMENT_STATUS--", "FISCAL" => array("method1_uid" => array("status1" => "status1_val"), "SHIPPING" => array("method1_uid" => array("status1" => "status1_val"))  ). See hpay status specification ib readme.MD
+     * @param string $order_uid - order unique identifikator
+     * @param array $as_array - parse reurn value as array
+     * @return string|assoc_array - HPAY status as string or prased if $as_array == true. If parsed reurned array will always have "PAYMENT","FISCAL" and "SHIPPING" keys. If there is nothing their value willl be null 
+     */
+    public function getOrderHPayStatus($order_uid, $as_array = false){
+        return HolestPayLib::dataProvider()->getOrderHPayStatus($order_uid, $as_array);
+    }
+
+    /**
+     * sets to HPay status for order. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default all is placed in single string. You can pass assoc_array for value to indicate only update of "PAYMENT","FISCAL" and "SHIPPING" part like array("PAYMENT" => "PAID"). Function needs to preseve all previous and just add ou update statuses (once added status for anything can not just dissapear).  
+     * @param string $order_uid - order unique identifikator
+     * @param strinh|assoc_array $hpay_status - full hpay_status as string in its format. Partial status as string for payment or/and fiscal or/and integration or/and shipping metods. Once ste status for some method can not dissapear it can only change value.
+     * @return string - full HPAY status in string form for order in HPay status format
+     */
+    public function setOrderHPayStatus($order_uid, $hpay_status){
+        return HolestPayLib::dataProvider()->setOrderHPayStatus($order_uid, $hpay_status);
+    }
+    
+    /**
+     * gets HPay order in HolestPay format eather from $order_uid or full site order object 
+     * @param string|Order $order_uid_or_site_order - $order_uid to read from data storage or full order object from site to convert to HPay Order
+     * @return assoc_array - HPAY Order
+     */
+    public function getHOrder($order_uid_or_site_order){
+        return HolestPayLib::dataProvider()->getHOrder($order_uid_or_site_order);
+    }
+    
+    /**
+     * gets HPay cart in HolestPay format eather from $order_uid or full site order or chart object 
+     * @param string|Order|Cart $order_uid_or_site_order_or_site_cart - $order_uid to read from data storage or full order object from site to convert to HPay Cart or site Cart object to HPay Cart
+     * @return assoc_array - HPAY Order
+     */  
+    public function getHCart($order_uid_or_site_order_or_site_cart){
+        return HolestPayLib::dataProvider()->getHCart($order_uid_or_site_order_or_site_cart);
+    }
+ 
+
+
+    private function onOrderUpdate(){
 
     }
 
-    public function acceptResult(){
+    private function acceptResult(){
         
     }
 
