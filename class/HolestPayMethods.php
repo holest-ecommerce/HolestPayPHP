@@ -13,6 +13,33 @@ if(!defined('HOLESTPAYLIB')){
 }
 
 trait HolestPayMethods{
-
     
+    public function getPaymentMethods($only_enabled = true, $cof_capable = null, $for_country = null, $for_amount = null, $for_amount_currency = null){
+
+    }
+
+    public function getShippingMethods($only_enabled = true, $for_country = null, $for_amount = null, $for_amount_currency = null){
+
+    }
+
+    public function getFiscalAndIntegrationMethods($only_enabled = true, $for_country = null){
+
+    }
+
+    public function getPaymentMethod($hpayment_method_uid){
+
+    }
+
+    public function getShippingMethod($hshipping_method_uid){
+
+    }
+
+    public function getFiscalAndIntegrationMethod($hfi_method_uid){
+
+    }
+
+    public function calculateShipping($hshipping_method_uid, $order_uid_or_horder){
+
+    }
+
 }

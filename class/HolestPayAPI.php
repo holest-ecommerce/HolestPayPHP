@@ -19,13 +19,20 @@ trait HolestPayAPI{
 
     }
 
-
     public function storeOrder($order_id, $with_status = null, $noresultawait = false){
 
     }
 
+    public function callMethodAction($hmethod_uid, $action, $data){
+
+    }
+    
+    public function callMethodDefaultAction($hmethod_uid, $action, $data){
+        return $this->callMethodAction($hmethod_uid, "defaultAction", $data);
+    }
+
     public function charge($pay_request, $hpay_method_id, $vault_token_uid){
-        
+
     }
 
     
