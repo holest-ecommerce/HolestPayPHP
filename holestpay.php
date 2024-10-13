@@ -13,11 +13,19 @@ namespace holestpay;
 
 if(!defined('HOLESTPAYLIB')){
 	define('HOLESTPAYLIB',__FILE__);
+    
     require_once(__DIR__ . "/class/HolestPayCore.php");
     require_once(__DIR__ . "/class/HolestPayConversion.php");
     require_once(__DIR__ . "/class/HolestPayNet.php");
+    require_once(__DIR__ . "/class/HolestPaySign.php");
+    require_once(__DIR__ . "/class/HolestPayUI.php");
+    require_once(__DIR__ . "/class/HolestPayI8N.php");
+    require_once(__DIR__ . "/class/HolestPayMethods.php");
     
     class HolestPayLib{
+        public static $PAY_STATUSES = array("SUCCESS","PAID", "AWAITING", "REFUNDED", "PARTIALLY-REFUNDED","VOID", "RESERVED", "EXPIRED", "OBLIGATED", "REFUSED");
+        public static $SHIPPING_PACKET_STATUSES = array("PREPARING", "READY", "SUBMITTED", "DELIVERY", "DELIVERED", "ERROR", "RESOLVING", "FAILED", "CANCELED");
+
         private static $_instance = null;
         private static $_config = null;
 
@@ -26,12 +34,15 @@ if(!defined('HOLESTPAYLIB')){
 
         private $instance_uid = null;
         private static $active_instance_uid = null;
-
-
+        
         //TRAITS///////////////////////////////////////
         use HolestPayCore;
         use HolestPayConversion;
         use HolestPayNet;
+        use HolestPaySign;
+        use HolestPayUI;
+        use HolestPayI8N;
+        use HolestPayMethods;
         ///////////////////////////////////////////////
         
         /**

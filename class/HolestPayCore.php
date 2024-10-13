@@ -129,6 +129,19 @@ trait HolestPayCore{
     }
 
     /**
+     * Gets HPay url for path 
+     * @param string $path
+     * @return string - URL for path
+     */
+    public function getHPayURL($path = ""){
+		$url = $this->getHSiteConfigParam("environment",null) == "production" ? HPAY_PRODUCTION_URL : HPAY_SANDBOX_URL;
+		if($path){
+			return rtrim($url,"/") . "/" . ltrim($path,"/");	
+		}
+		return $url;
+	}
+
+    /**
      * Destroys connection data
      * @return assoc_array - current full HPay site configuration with false for connection property (that property is named as environment)
      */
