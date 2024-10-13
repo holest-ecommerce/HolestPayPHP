@@ -13,7 +13,7 @@ namespace holestpay;
 
 if(!defined('HOLESTPAYLIB')){
 	define('HOLESTPAYLIB',__FILE__);
-    
+
     require_once(__DIR__ . "/class/HolestPayCore.php");
     require_once(__DIR__ . "/class/HolestPayConversion.php");
     require_once(__DIR__ . "/class/HolestPayNet.php");
@@ -31,6 +31,7 @@ if(!defined('HOLESTPAYLIB')){
 
         private static $_data_provider = null;
         private static $_log_provider = null;
+        private static $_translation_provider = null;
 
         private $instance_uid = null;
         private static $active_instance_uid = null;
@@ -95,6 +96,17 @@ if(!defined('HOLESTPAYLIB')){
          */
         public static function logProvider(){
             return self::$_log_provider;
+        }
+
+        /**
+         * returns current log provider instance
+         * @return \holestpay\HolestPayAbstractTranslationProvider
+         */
+        public static function translationProvider(){
+            if(!self::$_translation_provider){
+                self::$_translation_provider = new \holestpay\HolestPayDefaultTranslation(HolestPayLib::$_config);
+            }
+            return self::$_translation_provider;
         }
 
         /**
@@ -250,6 +262,36 @@ if(!defined('HOLESTPAYLIB')){
                                 if(class_exists($class_name)){
                                     //////////////////////////////////////////////////////////////////
                                     HolestPayLib::$_log_provider = new $class_name(HolestPayLib::$_config);
+                                    //////////////////////////////////////////////////////////////////    
+                                }
+                            }
+                        }
+                    }
+
+                    if(isset($cfg['translation_provider_class'])){
+                        if($cfg['translation_provider_class']){
+                            $cfg['translation_provider_classs'] = trim($cfg['translation_provider_class']);
+                            if(strtolower(substr($cfg['translation_provider_class'],-4)) == ".php"){
+                                $cfg['translation_provider_class'] = substr($cfg['translation_provider_class'],0, strlen($cfg['translation_provider_class']) - 4);
+                            }
+                            $translation_class_file = "";
+                            if(strpos($cfg['translation_provider_class'],"/") !== false || strpos($cfg['translation_provider_class'],"\\") !== false){
+                                if(file_exists("{$cfg['translation_provider_class']}.php")){
+                                    $translation_class_file = "{$cfg['translation_provider_class']}.php";
+                                }else if(file_exists(__DIR__ . "/implement/{$cfg['translation_provider_class']}.php")){
+                                    $translation_class_file = __DIR__ . "/implement/{$cfg['translation_provider_class']}.php";
+                                }
+                            }else if(file_exists(__DIR__ . "/implement/{$cfg['translation_provider_class']}.php")){
+                                $translation_class_file = __DIR__ . "/implement/{$cfg['translation_provider_class']}.php";
+                            }
+                            if($translation_class_file){
+                                require_once($translation_class_file);
+                                $path_parts = pathinfo($log_class_file);
+                                $class_name = $cfg['translation_provider_class_namespace'] ."\\". $path_parts['filename'];
+    
+                                if(class_exists($class_name)){
+                                    //////////////////////////////////////////////////////////////////
+                                    HolestPayLib::$_translation_provider = new $class_name(HolestPayLib::$_config);
                                     //////////////////////////////////////////////////////////////////    
                                 }
                             }
