@@ -31,6 +31,10 @@ trait HolestPayCore{
 
     }
 
+    public function webHooksHandler(){
+        
+    } 
+
     /**
      * returns current HPay site configuration from local data provider storage. Security parameters & POS configuration is obtained from HPay panel on connect, POS updates are received by site via web-hook when you update POS on HPay panel. Local copy is stored with (data provider)->setSiteConfiguration($hsite_configuration)
      * @param bool $reload - forces re-reading from local data provider storage
@@ -516,7 +520,54 @@ trait HolestPayCore{
         return HolestPayLib::dataProvider()->updateVaultReference($vault_ref, $vault_data);
      }
  
-
+     /**
+      * Merges newly arrived HTML response (may be payment, shipping and fiscal&integration output) to existing one 
+      * @param string $new_output - new HTML result for all payment or new HTML result for all shipping and new HTML result for all fiscal&integration 
+      * @param string $existing_output - previous HTML result output from data storage
+      * @return string merged output HTML 
+      */
+     private function mergeMethodsHTMLOutputs($new_output, $existing_output){
+		if(!trim($existing_output))
+			return $new_output;
+		
+		$new_arr      = explode("<!-- METHOD_HTML_START:",$new_output);
+		$existing_arr = explode("<!-- METHOD_HTML_START:",$existing_output);
+		
+		$new_dict      = array();
+		$existing_dict = array(); 
+		
+		foreach($new_arr as $msection){
+			if(stripos($msection,'<!-- METHOD_HTML_END') === false){
+				continue;
+			}
+			
+			$muid = explode(" -->",substr($msection,0,128));
+			$muid = trim($muid[0]);
+			$new_dict[$muid] = "<!-- METHOD_HTML_START:" . $msection;
+		}
+		
+		foreach($existing_arr as $msection){
+			if(stripos($msection,'<!-- METHOD_HTML_END') === false){
+				continue;
+			}
+			
+			$muid = explode(" -->",substr($msection,0,128));
+			$muid = trim($muid[0]);
+			$existing_dict[$muid] = "<!-- METHOD_HTML_START:" . $msection;
+		}
+		
+		foreach($new_dict as $muid => $msection){
+			$existing_dict[$muid] = $msection;
+		}
+		
+		$html = "";
+		
+		foreach($existing_dict as $muid => $msection){
+			$html .= ("\n" . $msection);
+		}
+		
+		return $html;
+	}
 
     private function onOrderUpdate(){
 

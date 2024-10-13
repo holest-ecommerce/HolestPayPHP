@@ -14,5 +14,14 @@ if(!defined('HOLESTPAYLIB')){
 
 trait HolestPayUI{
 
-    
+    public function frontendScripts($echo = false, $csp_nonce = ""){
+
+
+    }
+
+    public function backendendScripts($echo = false, $csp_nonce = ""){
+
+        
+    }
+
 }
