@@ -21,6 +21,7 @@ if(!defined('HOLESTPAYLIB')){
     require_once(__DIR__ . "/class/HolestPayUI.php");
     require_once(__DIR__ . "/class/HolestPayI8N.php");
     require_once(__DIR__ . "/class/HolestPayMethods.php");
+    require_once(__DIR__ . "/class/HolestPayAPI.php");
     
     class HolestPayLib{
         public static $PAY_STATUSES = array("SUCCESS","PAID", "AWAITING", "REFUNDED", "PARTIALLY-REFUNDED","VOID", "RESERVED", "EXPIRED", "OBLIGATED", "REFUSED");
@@ -44,6 +45,7 @@ if(!defined('HOLESTPAYLIB')){
         use HolestPayUI;
         use HolestPayI8N;
         use HolestPayMethods;
+        use HolestPayAPI;
         ///////////////////////////////////////////////
         
         /**

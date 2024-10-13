@@ -354,7 +354,6 @@ trait HolestPayCore{
         return HolestPayLib::dataProvider()->getFiscalOrIntegrationResponseHTML($order_uid);
     }
 
-    
     /**
      * gets current user displayable shipping methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
      * 
@@ -365,7 +364,7 @@ trait HolestPayCore{
         return HolestPayLib::dataProvider()->getShippingResponseHTML($order_uid);
      }
 
-     /**
+    /**
      * gets HPay status. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default its string, but you may get it as array is you set second prameter as true. In that case you will get array like this array("PAYMENT" => "--PAYMENT_STATUS--", "FISCAL" => array("method1_uid" => array("status1" => "status1_val"), "SHIPPING" => array("method1_uid" => array("status1" => "status1_val"))  ). See hpay status specification ib readme.MD
      * @param string $order_uid - order unique identifikator
      * @param array $as_array - parse reurn value as array
@@ -373,6 +372,82 @@ trait HolestPayCore{
      */
     public function getOrderHPayStatus($order_uid, $as_array = false){
         return HolestPayLib::dataProvider()->getOrderHPayStatus($order_uid, $as_array);
+    }
+
+    /**
+     * extracts only HPay PAY status form full HPay status
+     * @param string $order_uid - order unique identifikator
+     * @return string HPAY PAY status
+     */
+    public function getOrderHPayPayStatus($order_uid){
+        $hstatus = $this->getOrderHPayStatus($order_uid, false);
+        if(stripos($hstatus,"PAYMENT:") !== false){
+            $hstatus = trim($hstatus);
+            $hstatus = str_replace("  "," ",$hstatus);
+            $hstatus = str_replace("  "," ",$hstatus);
+            $hstatus = explode("PAYMENT:",$hstatus);
+            $hstatus = $hstatus[1];
+            $hstatus = explode(" ",$hstatus);
+            $hstatus = $hstatus[0];
+            return trim($hstatus);
+        }
+        return "";
+    }
+
+    /**
+     * extracts only HPay FISCAL&INTEGRATIOS status form full HPay status
+     * @param string $order_uid - order unique identifikator
+     * @return assoc_array - array("method1_uid" => method1_status ...)
+     */
+    public function getOrderHPayFiscalAndIntegrationStatus($order_uid){
+        $hstatus = $this->getOrderHPayStatus($order_uid, false);
+        if(stripos($hstatus,"_FISCAL:") !== false){
+            $hstatus = trim($hstatus);
+            $hstatus = str_replace("  "," ",$hstatus);
+            $hstatus = str_replace("  "," ",$hstatus);
+            $hstatus = explode(" ",$hstatus);
+            $fi_stat = array();
+            foreach($hstatus as $tstat){
+                if(stripos($tstat,"_FISCAL:") !== false){
+                    $tstat = explode("_FISCAL:",$tstat);
+                    $fi_stat[trim($tstat[0])] = trim($tstat[1]);
+                }
+            }
+            return $fi_stat;
+        }
+        return array();
+    }
+
+    /**
+     * extracts only HPay SHIPPING status form full HPay status
+     * @param string $order_uid - order unique identifikator
+     * @return assoc_array - array("method1_uid" => array( "packet1_code" => packet1_status) ...)
+     */
+    public function getOrderHPayShippingStatus($order_uid){
+        $hstatus = $this->getOrderHPayStatus($order_uid, false);
+        if(stripos($hstatus,"_SHIPPING:") !== false){
+            $hstatus = trim($hstatus);
+            $hstatus = str_replace("  "," ",$hstatus);
+            $hstatus = str_replace("  "," ",$hstatus);
+            $hstatus = explode(" ",$hstatus);
+            $s_stat = array();
+            foreach($hstatus as $tstat){
+                if(stripos($tstat,"_SHIPPING:") !== false){
+                    $tstat = explode("_SHIPPING:",$tstat);
+                    $s_stat[trim($tstat[0])] = array();
+                    $tstat[1] = trim($tstat[1]);
+                    $tstat[1] = explode(",",$tstat[1]);
+                    foreach($tstat[1] as $packet){
+                        if(strpos($packet,"@") !== false){
+                            $packet = explode("@",$packet);
+                            $s_stat[trim($tstat[0])][trim($packet[0])] = trim($packet[1]);
+                        }
+                    }
+                }
+            }
+            return $s_stat;
+        }
+        return array();
     }
 
     /**
@@ -402,6 +477,44 @@ trait HolestPayCore{
     public function getHCart($order_uid_or_site_order_or_site_cart){
         return HolestPayLib::dataProvider()->getHCart($order_uid_or_site_order_or_site_cart);
     }
+
+    /**
+    * gets array of vault references for user to be used for charge or presented user to choose from. $user_uid is usually email. 
+    * @param string $user_uid - user identifier / usually email
+    * @return assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
+    */ 
+    public function getVaultReferences($user_uid){
+        return HolestPayLib::dataProvider()->getVaultReferences($user_uid);
+    }
+
+    /**
+     * adds vault references for user to be used for future charges. $user_uid is usually email.
+    * @param string $user_uid - user identifier / usually email
+    * @param assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for 
+    * @return bool - true on success , false on failure
+    */  
+    public function addVaultReference($user_uid, $vault_data){
+        return HolestPayLib::dataProvider()->addVaultReference($user_uid, $vault_data);
+    }
+    
+    /**
+     * removes vault reference by its value 
+    * @param string $vault_ref - value of vault reference pointer itself
+    * @return bool - true on real delete happened, otherwise false
+    */  
+    public function removeVaultReference($vault_ref){
+        return HolestPayLib::dataProvider()->removeVaultReference($vault_ref);
+    }
+    
+    /**
+     * updates vault reference by its value 
+    * @param string $vault_ref - value of vault reference pointer itself
+    * @param assoc_array $vault_data - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
+    * @return bool - true on success, false on failure
+    */  
+     public function updateVaultReference($vault_ref, $vault_data){
+        return HolestPayLib::dataProvider()->updateVaultReference($vault_ref, $vault_data);
+     }
  
 
 
