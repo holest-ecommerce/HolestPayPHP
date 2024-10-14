@@ -143,6 +143,20 @@ if(!defined('HOLESTPAYLIB')){
             }
         }
 
+        private static function findClassFile($class){
+            $provider_class_file = "";
+            if(strpos($class,"/") !== false || strpos($class,"\\") !== false){
+                if(file_exists("{$class}.php")){
+                    $provider_class_file = "{$class}.php";
+                }else if(file_exists(__DIR__ . "/implement/{$class}.php")){
+                    $provider_class_file = __DIR__ . "/implement/{$class}.php";
+                }
+            }else if(file_exists(__DIR__ . "/implement/{$class}.php")){
+                $provider_class_file = __DIR__ . "/implement/{$class}.php";
+            }
+            return $provider_class_file;
+        }
+
         /**
          * Initializes the library from confg. This is the library config, and not the SITE/POS HPay config
          * 
@@ -207,16 +221,7 @@ if(!defined('HOLESTPAYLIB')){
                         if(strtolower(substr($cfg['data_provider_class'],-4)) == ".php"){
                             $cfg['data_provider_class'] = substr($cfg['data_provider_class'],0, strlen($cfg['data_provider_class']) - 4);
                         }
-                        $provider_class_file = "";
-                        if(strpos($cfg['data_provider_class'],"/") !== false || strpos($cfg['data_provider_class'],"\\") !== false){
-                            if(file_exists("{$cfg['data_provider_class']}.php")){
-                                $provider_class_file = "{$cfg['data_provider_class']}.php";
-                            }else if(file_exists(__DIR__ . "/implement/{$cfg['data_provider_class']}.php")){
-                                $provider_class_file = __DIR__ . "/implement/{$cfg['data_provider_class']}.php";
-                            }
-                        }else if(file_exists(__DIR__ . "/implement/{$cfg['data_provider_class']}.php")){
-                            $provider_class_file = __DIR__ . "/implement/{$cfg['data_provider_class']}.php";
-                        }
+                        $provider_class_file = HolestPayLib::findClassFile($cfg['data_provider_class']);
                         if($provider_class_file){
                             require_once($provider_class_file);
                             $path_parts = pathinfo($provider_class_file);
@@ -248,16 +253,9 @@ if(!defined('HOLESTPAYLIB')){
                             if(strtolower(substr($cfg['log_provider_class'],-4)) == ".php"){
                                 $cfg['log_provider_class'] = substr($cfg['log_provider_class'],0, strlen($cfg['log_provider_class']) - 4);
                             }
-                            $log_class_file = "";
-                            if(strpos($cfg['log_provider_class'],"/") !== false || strpos($cfg['log_provider_class'],"\\") !== false){
-                                if(file_exists("{$cfg['log_provider_class']}.php")){
-                                    $log_class_file = "{$cfg['log_provider_class']}.php";
-                                }else if(file_exists(__DIR__ . "/implement/{$cfg['log_provider_class']}.php")){
-                                    $log_class_file = __DIR__ . "/implement/{$cfg['log_provider_class']}.php";
-                                }
-                            }else if(file_exists(__DIR__ . "/implement/{$cfg['log_provider_class']}.php")){
-                                $log_class_file = __DIR__ . "/implement/{$cfg['log_provider_class']}.php";
-                            }
+
+                            $log_class_file = HolestPayLib::findClassFile($cfg['log_provider_class']);
+
                             if($log_class_file){
                                 require_once($log_class_file);
                                 $path_parts = pathinfo($log_class_file);
@@ -278,16 +276,7 @@ if(!defined('HOLESTPAYLIB')){
                             if(strtolower(substr($cfg['translation_provider_class'],-4)) == ".php"){
                                 $cfg['translation_provider_class'] = substr($cfg['translation_provider_class'],0, strlen($cfg['translation_provider_class']) - 4);
                             }
-                            $translation_class_file = "";
-                            if(strpos($cfg['translation_provider_class'],"/") !== false || strpos($cfg['translation_provider_class'],"\\") !== false){
-                                if(file_exists("{$cfg['translation_provider_class']}.php")){
-                                    $translation_class_file = "{$cfg['translation_provider_class']}.php";
-                                }else if(file_exists(__DIR__ . "/implement/{$cfg['translation_provider_class']}.php")){
-                                    $translation_class_file = __DIR__ . "/implement/{$cfg['translation_provider_class']}.php";
-                                }
-                            }else if(file_exists(__DIR__ . "/implement/{$cfg['translation_provider_class']}.php")){
-                                $translation_class_file = __DIR__ . "/implement/{$cfg['translation_provider_class']}.php";
-                            }
+                            $translation_class_file = HolestPayLib::findClassFile($cfg['translation_provider_class']);
                             if($translation_class_file){
                                 require_once($translation_class_file);
                                 $path_parts = pathinfo($log_class_file);
