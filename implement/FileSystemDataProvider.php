@@ -31,15 +31,39 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
   public function __construct($lib_configuration){
     $this->lib_configuration = $lib_configuration;
     if(isset($this->lib_configuration["file_provider_folder"])){
+        
+        if(strpos($this->lib_configuration["file_provider_folder"],"./") === 0){
+          $this->lib_configuration["file_provider_folder"] = substr($this->lib_configuration["file_provider_folder"],2);
+        }
+
         if(file_exists($this->lib_configuration["file_provider_folder"])){
-          $this->site_data_folder = rtrim(realpath($this->lib_configuration["file_provider_folder"]),"/");
-        }else if(file_exists(HPAY_LIB_ROOT . "/" . $this->lib_configuration["file_provider_folder"])){
-          $this->site_data_folder = rtrim(realpath(HPAY_LIB_ROOT . "/" . $this->lib_configuration["file_provider_folder"]),"/");
-        }else if(file_exists(__DIR__ . "/" . $this->lib_configuration["file_provider_folder"])){
-          $this->site_data_folder = rtrim(realpath(__DIR__ . "/" . $this->lib_configuration["file_provider_folder"]),"/");
+          $this->site_data_folder = rtrim($this->lib_configuration["file_provider_folder"],"/");
         }else{
-          //IT MUST EXIST!
-          HolestPayLib::writeLog("error", __FILE__ . " file_provider_folder - path not found");
+          if(file_exists(HPAY_LIB_ROOT . "/" . $this->lib_configuration["file_provider_folder"])){
+            $this->site_data_folder = rtrim(HPAY_LIB_ROOT . "/" . $this->lib_configuration["file_provider_folder"],"/");
+          }else if(file_exists(__DIR__ . "/" . $this->lib_configuration["file_provider_folder"])){
+            $this->site_data_folder = rtrim(__DIR__ . "/" . $this->lib_configuration["file_provider_folder"],"/");
+          }else{ 
+            //IT MUST EXIST!
+            HolestPayLib::writeLog("error", __FILE__ . " file_provider_folder - path not found");
+          }
+        }
+
+        if($this->site_data_folder){
+          $this->site_data_folder = str_replace("/",DIRECTORY_SEPARATOR, $this->site_data_folder);
+          $this->site_data_folder = explode(DIRECTORY_SEPARATOR,$this->site_data_folder);
+          $n = array();
+          foreach($this->site_data_folder as $index => $part){
+            if(isset($this->site_data_folder[$index + 1])){
+              if($this->site_data_folder[$index + 1] == ".."){
+                continue;
+              }
+            }
+            if($this->site_data_folder[$index] == "..")
+              continue;
+            $n[] = $this->site_data_folder[$index];
+          }
+          $this->site_data_folder = implode(DIRECTORY_SEPARATOR,$n);
         }
     }
 
@@ -54,7 +78,9 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
   }
 
   private function getFullPath($path){
-    return $this->site_data_folder . "/" . ltrim($path,"/");
+    if(!$this->site_data_folder)
+      return null;
+    return str_replace("/",DIRECTORY_SEPARATOR, $this->site_data_folder . "/" . ltrim($path,"/"));
   }
 
   private function loadJsonFromPath($path, $default_data = array(), $nocache = false){
@@ -66,8 +92,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
     $full_path = $this->getFullPath($path);
     if(file_exists($full_path)){
       try{
-        $data = json_decode( file_get_contents($path), true);
-       
+        $data = json_decode( file_get_contents($full_path), true);
         if(!$nocache && $this->use_cache && strpos($path,".lock") === false){
             $this->CACHE[$path] = $data;  
         }
@@ -118,6 +143,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
     try{
       
       $dir = dirname($full_path);
+
       if(!file_exists($dir)){
         mkdir( $dir, 0775, true );
       }
@@ -236,15 +262,16 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
  * @return assoc_array array("rate" => 0.322234, "ts" => time())
  */
   public function cacheExchnageRate($form, $to, $rate, $ts = null){
+
     $rate_data = is_array($rate) ? $rate : array(
-      "rate" => $rate,
+      "rate" => floatval($rate),
       "ts" => $ts ? $ts : time()
     );
 
     if(!isset($rate_data["ts"]))
       $rate_data["ts"] = time();
 
-    $this->mergeJsonToPath("/exchange_rates/{$form}{$to}.json", $rate_data);
+    $this->writeJsonToPath("/exchange_rates/{$form}{$to}.json", $rate_data);
     return $rate_data;
   }
 

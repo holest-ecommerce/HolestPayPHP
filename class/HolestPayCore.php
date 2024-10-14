@@ -257,7 +257,7 @@ trait HolestPayCore{
             }
 
             $cached = HolestPayLib::dataProvider()->readExchnageRate($from, $to);
-
+           
             if($cached){
                 if(is_array($cached)){
                     if(isset($cached["ts"]) && isset($cfg["exchange_rate_cache_h"])){
@@ -295,7 +295,7 @@ trait HolestPayCore{
                             );
                         }else
                             $cached = $res->json();
-
+                            
                         if($cached){
                             if(!isset($cached["rate"])){
                                 $cached = null;
