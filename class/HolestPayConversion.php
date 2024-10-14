@@ -95,7 +95,6 @@ trait HolestPayConversion{
 
 			if($to_currency != $curr){
 				$rate = HolestPayLib::instance()->getMerchantExchnageRate($curr, $to_currency);
-				return "|{$rate}|";
 				return $price * $rate;
 			}
 			

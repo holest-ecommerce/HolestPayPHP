@@ -1,5 +1,9 @@
 # HolestPayPHP
  HolestPayPHP library
+ ```shell
+PHP 7.2+, 8.*, 9.*
+required PHP modules: php-curl (php-curl is usually there by default on linux, on windows you may need to enable it sometimes)
+```
 
 # HolestPay Order Status Format
 
