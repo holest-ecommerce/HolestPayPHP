@@ -395,9 +395,9 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
  */
   public function getHOrder($order_uid_or_site_order){
     if(is_array($order_uid_or_site_order))
-        return $order_uid_or_site_order; //just return becuse for this provider we assume same as HPay request native format
+        return $order_uid_or_site_order; //just return becuse for this provider we assume same as HPay request native format. You probably need to convert your site order to hpay order
     else
-        return $this->loadJsonFromPath("/orders/{$order_uid_or_site_order}/data.json",null);//for this provider we assume same as HPay request native format  
+        return $this->loadJsonFromPath("/orders/{$order_uid_or_site_order}/data.json",null);//for this provider we assume same as HPay request native format. You probably need to convert your site order to hpay order  
   }
 
 /**
@@ -406,7 +406,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
  * @return assoc_array - HPAY Order
  */  
   public function getHCart($site_cart){
-    return $this->getHOrder($site_cart);//for this provider we assume same as HPay request native format 
+    return $this->getHOrder($site_cart);//for this provider we assume same as HPay request native format. You probably need to convert your site order to hpay order 
   }
 
 /**
@@ -529,7 +529,6 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
       return HolestPayLib::libConfig()["default_language"];
   }
 
-
  /**
    * returns site currency
    * @return string - currency like RSD, EUR, MKD, BAM, USD, CHF, GBP... 
@@ -538,24 +537,22 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
       return HolestPayLib::libConfig()["default_currency"];
   }
 
+  /**
+   * loads site HPay configuration from permanent data storage
+   * @return assoc_array - HPay site configuration
+   */
+  public function loadSiteConfiguration(){
+    return $this->loadJsonFromPath("/site_config.json", null);
+  }
 
-/**
- * loads site HPay configuration from permanent data storage
- * @return assoc_array - HPay site configuration
- */
-public function loadSiteConfiguration(){
-
-}
-
-/**
- * writes site HPay configuration to permanent data storage
- * @param string|assoc_array $site_configuration - configuration to set including POS setup. If string it will be JSON deserialized. If you use single filed for it in DB make sure it can accept large amount of data. At least mediumtext
- * @return assoc_array - Site configuration that was set
- */
-public function setSiteConfiguration($site_configuration){
-
-
-}
+  /**
+   * writes site HPay configuration to permanent data storage
+   * @param string|assoc_array $site_configuration - configuration to set including POS setup. If string it will be JSON deserialized. If you use single filed for it in DB make sure it can accept large amount of data. At least mediumtext
+   * @return assoc_array - Site configuration that was set
+   */
+  public function setSiteConfiguration($site_configuration){
+    $this->writeJsonToPath("/site_config.json", $site_configuration);
+  }
 
 
 }
