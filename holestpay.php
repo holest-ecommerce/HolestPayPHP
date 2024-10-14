@@ -14,6 +14,8 @@ namespace holestpay;
 if(!defined('HOLESTPAYLIB')){
 	define('HOLESTPAYLIB',__FILE__);
 
+    require_once(__DIR__ . "/defines.php");
+
     require_once(__DIR__ . "/class/HolestPayCore.php");
     require_once(__DIR__ . "/class/HolestPayConversion.php");
     require_once(__DIR__ . "/class/HolestPayNet.php");

@@ -257,6 +257,7 @@ trait HolestPayCore{
             }
 
             $cached = HolestPayLib::dataProvider()->readExchnageRate($from, $to);
+
             if($cached){
                 if(is_array($cached)){
                     if(isset($cached["ts"]) && isset($cfg["exchange_rate_cache_h"])){
@@ -269,43 +270,46 @@ trait HolestPayCore{
                         }
                     }
                 }
+            }
 
-                if(!$cached){
-                    if(!isset($cfg["exchange_rate_source"])){
-                        return null;
-                    }
+            if(!$cached){
+                
+                if(!isset($cfg["exchange_rate_source"])){
+                    HolestPayLib::writeLog("error","exchange_rate_source - not configured");
+                    return null;
+                }
 
-                    $eurl = str_ireplace('{FROM}',$from,$cfg["exchange_rate_source"]);
-                    $eurl = str_ireplace('{TO}',$to,$eurl);
-                    
-                    $res = HolestPayLib::fetch($eurl, array(
-                        "timeout" => 15
-                    ));
+                $eurl = str_ireplace('{FROM}',$from,$cfg["exchange_rate_source"]);
+                $eurl = str_ireplace('{TO}',$to,$eurl);
 
-                    if($res){
-                        if( substr("{$res->status}",0,1) == "2"){
-                            if(floatval($res->raw)){
-                                $cached = array(
-                                    "rate" => floatval($res->raw),
-                                    "ts" => time()
-                                );
-                            }else
-                                $cached = $res->json();
+                $res = HolestPayLib::fetch($eurl, array(
+                    "timeout" => 15
+                ));
 
-                            if($cached){
-                                if(!isset($cached["rate"])){
-                                    $cached = null;
-                                }else if(!$cached["rate"]){
-                                    $cached = null;
-                                }
+                if($res){
+                    if( substr("{$res->status}",0,1) == "2"){
+                        if(floatval($res->raw)){
+                            $cached = array(
+                                "rate" => floatval($res->raw),
+                                "ts" => time()
+                            );
+                        }else
+                            $cached = $res->json();
+
+                        if($cached){
+                            if(!isset($cached["rate"])){
+                                $cached = null;
+                            }else if(!$cached["rate"]){
+                                $cached = null;
                             }
-                            if($cached){
-                                HolestPayLib::dataProvider()->cacheExchnageRate($from, $to, $cached["rate"],$cached["ts"]);
-                            }
+                        }
+                        if($cached){
+                            HolestPayLib::dataProvider()->cacheExchnageRate($from, $to, $cached["rate"],$cached["ts"]);
                         }
                     }
                 }
             }
+            
         }catch(Throwable $ex){
             HolestPayLib::writeLog("error",$ex->getMessage(),5);
         }

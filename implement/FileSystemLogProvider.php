@@ -46,7 +46,13 @@ class FileSystemLogProvider extends HolestPayAbstractLogProvider{
 
         if($this->lib_configuration){
             if($this->lib_configuration["log_enabled"]){
-                @file_get_contents($this->lib_configuration["log_provider_folder"] . "/" . date("Y_m_d_") . $logscope . ".log", date("Y-m-d H:i:s: ") . ( is_string($data) ? $data : json_encode($data, JSON_PRETTY_PRINT)) ."\r\n",FILE_APPEND);      
+                $dest = null;
+                if(substr($this->lib_configuration["log_provider_folder"],0,1) == "."){
+                    $dest = realpath(HPAY_LIB_ROOT . "/" . $this->lib_configuration["log_provider_folder"] . "/" . date("Y_m_d_") . $logscope . ".log");
+                }else{
+                    $dest = realpath($this->lib_configuration["log_provider_folder"] . "/" . date("Y_m_d_") . $logscope . ".log");
+                }
+                @file_put_contents($dest, date("Y-m-d H:i:s: ") . ( is_string($data) ? $data : json_encode($data, JSON_PRETTY_PRINT)) ."\r\n",FILE_APPEND);      
             }
         }
     }

@@ -22,7 +22,7 @@ class NetResponse{
 
     private $_json = null;
 
-    private function __construct($raw, $status){
+    public function __construct($raw, $status){
         $this->raw = $raw; 
         $this->status = $status; 
     }
@@ -121,7 +121,7 @@ trait HolestPayNet{
 		
         curl_close($ch);
 
-        return new NetResponse($response, $httpcode);
+        return new \holestpay\NetResponse($response, $httpcode);
     }
 
 }

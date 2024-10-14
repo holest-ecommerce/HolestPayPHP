@@ -85,15 +85,17 @@ trait HolestPayConversion{
 			$price = floatval($amt_with_currency);
 
 			preg_match('/[a-zA-Z]{3}/', $amt_with_currency, $curr);
+			
 			if(!empty($curr)){
 				$curr = strtoupper(trim($curr[0]));
 			}
-
+			
 			if(!$curr)
 				$curr = HolestPayLib::instance()->getCurrency();
 
 			if($to_currency != $curr){
 				$rate = HolestPayLib::instance()->getMerchantExchnageRate($curr, $to_currency);
+				return "|{$rate}|";
 				return $price * $rate;
 			}
 			
