@@ -223,6 +223,12 @@ abstract class HolestPayAbstractDataProvider {
  */
   abstract public function getLanguage();
 
+ /**
+   * returns site currency
+   * @return string - currency like RSD, EUR, MKD, BAM, USD, CHF, GBP... 
+   */
+  abstract public function getCurrency();
+
 /**
  * loads site HPay configuration from permanent data storage
  * @return assoc_array - HPay site configuration

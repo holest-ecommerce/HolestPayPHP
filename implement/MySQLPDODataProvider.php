@@ -233,6 +233,15 @@ class MySQLPDODataProvider extends HolestPayAbstractDataProvider{
 
   }
 
+
+/**
+ * returns site currency
+ * @return string - currency like RSD, EUR, MKD, BAM, USD, CHF, GBP... 
+ */
+public function getCurrency(){
+  return HolestPayLib::libConfig()["default_currency"];
+}
+
 /**
  * loads site HPay configuration from permanent data storage
  * @return assoc_array - HPay site configuration

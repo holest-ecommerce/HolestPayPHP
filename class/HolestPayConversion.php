@@ -69,4 +69,38 @@ trait HolestPayConversion{
 		return $value;
 	}
 
+	/**
+	 * Converts money string like 2222 RSD to amount in specified currency
+	 * @param string $amt_with_currency - like '1100.00 RSD'
+	 * @param string $to_currency - target currency like EUR, BAM, MKD...
+	 */
+	public static function convertMoney($amt_with_currency, $to_currency = null){
+		if($amt_with_currency){
+
+			if($to_currency === null){
+				$to_currency = HolestPayLib::instance()->getCurrency();
+			}
+
+			$curr = null;
+			$price = floatval($amt_with_currency);
+
+			preg_match('/[a-zA-Z]{3}/', $amt_with_currency, $curr);
+			if(!empty($curr)){
+				$curr = strtoupper(trim($curr[0]));
+			}
+
+			if(!$curr)
+				$curr = HolestPayLib::instance()->getCurrency();
+
+			if($to_currency != $curr){
+				$rate = HolestPayLib::instance()->getMerchantExchnageRate($curr, $to_currency);
+				return $price * $rate;
+			}
+			
+			return $price;
+
+		}else
+			return 0.00;
+	}
+
 }

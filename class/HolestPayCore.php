@@ -32,7 +32,7 @@ trait HolestPayCore{
     }
 
     public function webHooksHandler(){
-        
+
     } 
 
     /**
@@ -240,6 +240,13 @@ trait HolestPayCore{
 		if($from == $to){
 			return 1.00;	
 		}
+
+        global $__hpay_in_proccess_exc_rates;
+        if(!isset($__hpay_in_proccess_exc_rates))
+            $__hpay_in_proccess_exc_rates = array();
+
+        if(isset($__hpay_in_proccess_exc_rates["{$from}{$to}"]))    
+            return $__hpay_in_proccess_exc_rates["{$from}{$to}"];
 		
 		$cached = null;
 
@@ -304,6 +311,7 @@ trait HolestPayCore{
         }
 
         if($cached){
+            $__hpay_in_proccess_exc_rates["{$from}{$to}"] = $cached["rate"];
             return $cached["rate"];
         }
          
@@ -376,6 +384,22 @@ trait HolestPayCore{
      */
     public function getOrderHPayStatus($order_uid, $as_array = false){
         return HolestPayLib::dataProvider()->getOrderHPayStatus($order_uid, $as_array);
+    }
+
+    /**
+     * returns site language
+     * @return string - language, should be 2 lowercase letters language code like 'rs','en','de','mk','el'... 
+     */
+    public function getLanguage(){
+        return HolestPayLib::dataProvider()->getLanguage();
+    }
+
+    /**
+     * returns site currency
+     * @return string - currency like RSD, EUR, MKD, BAM, USD, CHF, GBP... 
+     */
+    public function getCurrency(){
+        return HolestPayLib::dataProvider()->getCurrency();
     }
 
     /**

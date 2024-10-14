@@ -7,7 +7,7 @@ try{
     \holestpay\HolestPayLib::init();
 
 
-    echo \holestpay\HolestPayLib::convertToCM(50,"in");
+    echo \holestpay\HolestPayLib::convertMoney("30 EUR","RSD");
 
     
 
