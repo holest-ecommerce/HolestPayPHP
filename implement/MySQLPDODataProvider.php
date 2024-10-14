@@ -140,10 +140,11 @@ class MySQLPDODataProvider extends HolestPayAbstractDataProvider{
 
  /**
  * HPay tries to deliver result to your site in few ways. If result has already been accepted you don't need to accept it again. You use md5(verificationhash) or md5(vhash) to get unique result identification. See hpay status specification ib readme.MD
+ * @param string $order_uid - order unique identifikator
  * @param string $result_md5_hash. Usualy calculated as md5(verificationhash) or md5(vhash)
  * @return bool - true if result was already accepted otherwise false.  
  */
-  public function resultAlreadyReceived($result_md5_hash){}
+  public function resultAlreadyReceived($order_uid,$result_md5_hash){}
 
 /**
  * gets HPay status. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default its string, but you may get it as array is you set second prameter as true. In that case you will get array like this array("PAYMENT" => "--PAYMENT_STATUS--", "FISCAL" => array("method1_uid" => array("status1" => "status1_val"), "SHIPPING" => array("method1_uid" => array("status1" => "status1_val"))  ). See hpay status specification ib readme.MD
@@ -185,25 +186,27 @@ class MySQLPDODataProvider extends HolestPayAbstractDataProvider{
 /**
 * adds vault references for user to be used for future charges. $user_uid is usually email.
 * @param string $user_uid - user identifier / usually email
-* @param assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for 
+* @param assoc_array - vault references data array. Basides value it ,may contain masked pan, last use time, method for which its valid for 
 * @return bool - true on success , false on failure
 */  
   public function addVaultReference($user_uid, $vault_data){}
  
 /**
 * removes vault reference by its value 
-* @param string $vault_ref - value of vault reference pointer itself
+* @param string $user_uid - user identifier / usually email
+* @param string $vault_token_uid - value of vault reference pointer itself
 * @return bool - true on real delete happened, otherwise false
 */  
-  public function removeVaultReference($vault_ref){}
+  public function removeVaultReference($user_uid, $vault_ref){}
 
 /**
 * updates vault reference by its value 
-* @param string $vault_ref - value of vault reference pointer itself
+* @param string $user_uid - user identifier / usually email
+* @param string $vault_token_uid - value of vault reference pointer itself
 * @param assoc_array $vault_data - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
 * @return bool - true on success, false on failure
 */  
-  public function updateVaultReference($vault_ref, $vault_data){}
+  public function updateVaultReference($user_uid, $vault_token_uid, $vault_data){}
 
 /**
  * PCI DSS 4.0.+ requires script integrity check to prevent CDN file modifiation and XSS attacks. This function will be used to store script integrity value for all scripts you load from HolestPay CDN. If integrity script tag attribute is wrong script will not be executed by browsers.
@@ -225,19 +228,19 @@ class MySQLPDODataProvider extends HolestPayAbstractDataProvider{
   }
 
 
-/**
+ /**
  * returns site language
  * @return string - language, should be 2 lowercase letters language code like 'rs','en','de','mk','el'... 
  */
-  public function getLanguage(){
-
-  }
+public function getLanguage(){
+  return HolestPayLib::libConfig()["default_language"];
+}
 
 
 /**
- * returns site currency
- * @return string - currency like RSD, EUR, MKD, BAM, USD, CHF, GBP... 
- */
+* returns site currency
+* @return string - currency like RSD, EUR, MKD, BAM, USD, CHF, GBP... 
+*/
 public function getCurrency(){
   return HolestPayLib::libConfig()["default_currency"];
 }

@@ -84,6 +84,8 @@ trait HolestPayConversion{
 			$curr = null;
 			$price = floatval($amt_with_currency);
 
+			$price = (float) filter_var( $amt_with_currency, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION );
+
 			preg_match('/[a-zA-Z]{3}/', $amt_with_currency, $curr);
 			
 			if(!empty($curr)){

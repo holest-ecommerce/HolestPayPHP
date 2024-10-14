@@ -213,8 +213,52 @@ if(!defined('HOLESTPAYLIB')){
             }
 
             if($cfg){
-                $err = "";
 
+                if(isset($cfg['log_enabled']) && isset($cfg['log_provider_class'])){
+                    if($cfg['log_enabled'] && $cfg['log_provider_class']){
+                        $cfg['log_provider_class'] = trim($cfg['log_provider_class']);
+                        if(strtolower(substr($cfg['log_provider_class'],-4)) == ".php"){
+                            $cfg['log_provider_class'] = substr($cfg['log_provider_class'],0, strlen($cfg['log_provider_class']) - 4);
+                        }
+
+                        $log_class_file = HolestPayLib::findClassFile($cfg['log_provider_class']);
+
+                        if($log_class_file){
+                            require_once($log_class_file);
+                            $path_parts = pathinfo($log_class_file);
+                            $class_name = $cfg['log_provider_class_namespace'] ."\\". $path_parts['filename'];
+
+                            if(class_exists($class_name)){
+                                //////////////////////////////////////////////////////////////////
+                                HolestPayLib::$_log_provider = new $class_name(HolestPayLib::$_config);
+                                //////////////////////////////////////////////////////////////////    
+                            }
+                        }
+                    }
+                }
+
+                if(isset($cfg['translation_provider_class'])){
+                    if($cfg['translation_provider_class']){
+                        $cfg['translation_provider_classs'] = trim($cfg['translation_provider_class']);
+                        if(strtolower(substr($cfg['translation_provider_class'],-4)) == ".php"){
+                            $cfg['translation_provider_class'] = substr($cfg['translation_provider_class'],0, strlen($cfg['translation_provider_class']) - 4);
+                        }
+                        $translation_class_file = HolestPayLib::findClassFile($cfg['translation_provider_class']);
+                        if($translation_class_file){
+                            require_once($translation_class_file);
+                            $path_parts = pathinfo($log_class_file);
+                            $class_name = $cfg['translation_provider_class_namespace'] ."\\". $path_parts['filename'];
+
+                            if(class_exists($class_name)){
+                                //////////////////////////////////////////////////////////////////
+                                HolestPayLib::$_translation_provider = new $class_name(HolestPayLib::$_config);
+                                //////////////////////////////////////////////////////////////////    
+                            }
+                        }
+                    }
+                }
+
+                $err = "";
                 if(isset($cfg['data_provider_class'])){
                     if($cfg['data_provider_class']){
                         $cfg['data_provider_class'] = trim($cfg['data_provider_class']);
@@ -247,49 +291,7 @@ if(!defined('HOLESTPAYLIB')){
 
                 if(!$err){
 
-                    if(isset($cfg['log_enabled']) && isset($cfg['log_provider_class'])){
-                        if($cfg['log_enabled'] && $cfg['log_provider_class']){
-                            $cfg['log_provider_class'] = trim($cfg['log_provider_class']);
-                            if(strtolower(substr($cfg['log_provider_class'],-4)) == ".php"){
-                                $cfg['log_provider_class'] = substr($cfg['log_provider_class'],0, strlen($cfg['log_provider_class']) - 4);
-                            }
-
-                            $log_class_file = HolestPayLib::findClassFile($cfg['log_provider_class']);
-
-                            if($log_class_file){
-                                require_once($log_class_file);
-                                $path_parts = pathinfo($log_class_file);
-                                $class_name = $cfg['log_provider_class_namespace'] ."\\". $path_parts['filename'];
-    
-                                if(class_exists($class_name)){
-                                    //////////////////////////////////////////////////////////////////
-                                    HolestPayLib::$_log_provider = new $class_name(HolestPayLib::$_config);
-                                    //////////////////////////////////////////////////////////////////    
-                                }
-                            }
-                        }
-                    }
-
-                    if(isset($cfg['translation_provider_class'])){
-                        if($cfg['translation_provider_class']){
-                            $cfg['translation_provider_classs'] = trim($cfg['translation_provider_class']);
-                            if(strtolower(substr($cfg['translation_provider_class'],-4)) == ".php"){
-                                $cfg['translation_provider_class'] = substr($cfg['translation_provider_class'],0, strlen($cfg['translation_provider_class']) - 4);
-                            }
-                            $translation_class_file = HolestPayLib::findClassFile($cfg['translation_provider_class']);
-                            if($translation_class_file){
-                                require_once($translation_class_file);
-                                $path_parts = pathinfo($log_class_file);
-                                $class_name = $cfg['translation_provider_class_namespace'] ."\\". $path_parts['filename'];
-    
-                                if(class_exists($class_name)){
-                                    //////////////////////////////////////////////////////////////////
-                                    HolestPayLib::$_translation_provider = new $class_name(HolestPayLib::$_config);
-                                    //////////////////////////////////////////////////////////////////    
-                                }
-                            }
-                        }
-                    }
+                    
 
                     HolestPayLib::instance(true);//CREATE INSTANCE
 

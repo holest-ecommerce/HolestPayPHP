@@ -409,10 +409,11 @@ trait HolestPayCore{
     /**
      * extracts only HPay PAY status form full HPay status
      * @param string $order_uid - order unique identifikator
+     * @param string $full_status_string - pass full HPay status directly
      * @return string HPAY PAY status
      */
-    public function getOrderHPayPayStatus($order_uid){
-        $hstatus = $this->getOrderHPayStatus($order_uid, false);
+    public function getOrderHPayPayStatus($order_uid, $full_status_string = null){
+        $hstatus = $full_status_string !== null ? $full_status_string : $this->getOrderHPayStatus($order_uid, false);
         if(stripos($hstatus,"PAYMENT:") !== false){
             $hstatus = trim($hstatus);
             $hstatus = str_replace("  "," ",$hstatus);
@@ -429,10 +430,11 @@ trait HolestPayCore{
     /**
      * extracts only HPay FISCAL&INTEGRATIOS status form full HPay status
      * @param string $order_uid - order unique identifikator
+     * @param string $full_status_string - pass full HPay status directly
      * @return assoc_array - array("method1_uid" => method1_status ...)
      */
-    public function getOrderHPayFiscalAndIntegrationStatus($order_uid){
-        $hstatus = $this->getOrderHPayStatus($order_uid, false);
+    public function getOrderHPayFiscalAndIntegrationStatus($order_uid, $full_status_string = null){
+        $hstatus = $full_status_string !== null ? $full_status_string : $this->getOrderHPayStatus($order_uid, false);
         if(stripos($hstatus,"_FISCAL:") !== false){
             $hstatus = trim($hstatus);
             $hstatus = str_replace("  "," ",$hstatus);
@@ -453,10 +455,11 @@ trait HolestPayCore{
     /**
      * extracts only HPay SHIPPING status form full HPay status
      * @param string $order_uid - order unique identifikator
+     * @param string $full_status_string - pass full HPay status directly
      * @return assoc_array - array("method1_uid" => array( "packet1_code" => packet1_status) ...)
      */
-    public function getOrderHPayShippingStatus($order_uid){
-        $hstatus = $this->getOrderHPayStatus($order_uid, false);
+    public function getOrderHPayShippingStatus($order_uid, $full_status_string = null){
+       $hstatus = $full_status_string !== null ? $full_status_string : $this->getOrderHPayStatus($order_uid, false);
         if(stripos($hstatus,"_SHIPPING:") !== false){
             $hstatus = trim($hstatus);
             $hstatus = str_replace("  "," ",$hstatus);
@@ -480,6 +483,96 @@ trait HolestPayCore{
             return $s_stat;
         }
         return array();
+    }
+
+    /**
+     * Parses HPay status string to assoc array
+     * @param string $hpay_status - full hpay status 
+     * @return array - assoc array
+     */
+    public function parseHStatus($hpay_status){
+        return array(
+            "PAYMENT"  => $this->getOrderHPayPayStatus(null, $hpay_status),
+            "FISCAL"   => $this->getOrderHPayFiscalAndIntegrationStatus(null, $hpay_status),
+            "SHIPPING" => $this->getOrderHPayShippingStatus(null, $hpay_status)
+        );
+    }
+
+    /**
+     * Serialized HPay status in assoc array data structure to full HPay status string
+     * @param assoc_array - HPay status in assoc array form
+     * @return string HPay status in string form 
+     */
+    public function serializeHStatus($status_data){
+        $status_full = "";
+        if($status_data){
+            if(isset($status_data["PAYMENT"])){
+                $status_full = "PAYMENT:" . $status_data["PAYMENT"];
+            }
+
+            if(isset($status_data["FISCAL"])){
+                foreach($status_data["FISCAL"] as $method_uid => $f_status){
+                    if($f_status){
+                        if($status_full)
+                            $status_full .= " ";
+                        $status_full .= "{$method_uid}_FISCAL:{$f_status}";
+                    }
+                }
+            }
+
+            if(isset($status_data["SHIPPING"])){
+                foreach($status_data["SHIPPING"] as $method_uid => $packets){
+                    if(!empty($packets)){
+                        if($status_full)
+                            $status_full .= " ";
+                        $status_full .= "{$method_uid}_SHIPPING:";
+                        $p_and_s = array();
+                        foreach($packets as $packet_code => $packet_status){
+                            $p_and_s[] = "{$packet_code}@{$packet_status}";
+                        }
+                        $status_full .= implode(",",$p_and_s);
+                    }
+                }
+            }
+        }
+        return $status_full;
+    }
+
+    /**
+     * Conbines new status updates with existing ones and calculates new HPay status string making sure no information is lost. Normaly you don't combine statuses yourself.
+     * @param string $status - existing status
+     * @param string $new_status - new status
+     * @return HPay status in string form 
+     */
+    public function mergeHPayStatus($status, $new_status){
+        if(!$new_status){
+            if(!$status)
+                return "";
+            return is_string($status) ? $status : $this->serializeHStatus($status);
+        }
+
+        if(!$status)
+            $status = array();
+        else if(is_string($status)){
+            $status = $this->parseHStatus($status);
+        }else{
+            $status = json_decode(json_encode($status),true);//MAKE A COPY!
+        }
+
+        if(is_string($new_status)){
+            $new_status = $this->parseHStatus($new_status);
+        }
+
+        foreach($new_status as $what => $sval){
+            if($what == "PAYMENT"){
+                if($sval)
+                    $status["PAYMENT"] = $sval;
+            }else{
+                if($new_status[$what] && !empty($new_status[$what]))
+                    $status[$what] = array_merge($status[$what],$new_status[$what]);
+            }
+        }
+        return $status;
     }
 
     /**
@@ -521,7 +614,7 @@ trait HolestPayCore{
 
     /**
      * adds vault references for user to be used for future charges. $user_uid is usually email.
-    * @param string $user_uid - user identifier / usually email
+    * @param string $vault_token_uid - user identifier / usually email
     * @param assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for 
     * @return bool - true on success , false on failure
     */  
@@ -530,22 +623,24 @@ trait HolestPayCore{
     }
     
     /**
-     * removes vault reference by its value 
-    * @param string $vault_ref - value of vault reference pointer itself
+    * removes vault reference by its value 
+    * @param string $user_uid - user identifier / usually email
+    * @param string $vault_token_uid - value of vault reference pointer itself
     * @return bool - true on real delete happened, otherwise false
     */  
-    public function removeVaultReference($vault_ref){
-        return HolestPayLib::dataProvider()->removeVaultReference($vault_ref);
+    public function removeVaultReference($user_uid, $vault_token_uid){
+        return HolestPayLib::dataProvider()->removeVaultReference($user_uid, $vault_token_uid);
     }
     
     /**
      * updates vault reference by its value 
-    * @param string $vault_ref - value of vault reference pointer itself
+    * @param string $user_uid - user identifier / usually email
+    * @param string $vault_token_uid - value of vault reference pointer itself
     * @param assoc_array $vault_data - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
     * @return bool - true on success, false on failure
     */  
-     public function updateVaultReference($vault_ref, $vault_data){
-        return HolestPayLib::dataProvider()->updateVaultReference($vault_ref, $vault_data);
+     public function updateVaultReference($user_uid,$vault_token_uid, $vault_data){
+        return HolestPayLib::dataProvider()->updateVaultReference($user_uid,$vault_token_uid, $vault_data);
      }
  
      /**
