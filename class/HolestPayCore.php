@@ -16,6 +16,7 @@ if(!defined('HOLESTPAYLIB')){
 trait HolestPayCore{
 
     private $_webResultHandlerCalled = false;
+    private $_webHooksHandlerCalled = false;
     private $_HSiteConfig = null;
     
 
@@ -25,14 +26,93 @@ trait HolestPayCore{
      */
     public function webResultHandler(){
         if($this->_webResultHandlerCalled){
-            return;//RUN ONLY ONCE
+            try{
+                if(isset($_REQUEST["hpay_forwarded_payment_response"])){
+                    $str_resp = $_REQUEST["hpay_forwarded_payment_response"];
+                    $result = json_decode($str_resp, true);
+                    if(!$result){
+                        $result = json_decode(stripslashes($str_resp), true);
+                    }
+                    $hmethod = null;
+                    if(isset($result["order_uid"])){
+                        $order = HolestPayLib::dataProvider()->getHOrder($result["order_uid"]);
+                        if(isset($result["payment_method"])){
+                            $hmethod = $this->getPaymentMethod($result["payment_method"]);
+                        }
+
+                        if(!$hmethod && $order && @$order["payment_method"]){
+                            $hmethod = $this->getPaymentMethod($order["payment_method"]);
+                        }
+
+                        if(!$hmethod){
+                            $hmths = HolestPayLib::instance()->getPaymentMethods(true);
+                            if(!empty($hmths)){
+                                $hmethod = $hmths[0];
+                            }
+                        }
+
+                        if($hmethod){
+                            if(isset($result["status"]) && isset($result["transaction_uid"])){
+                                $res = $this->acceptResult($order, $result, $hmethod);
+                                
+                                if($res === true){
+
+                                    $return_url = HolestPayLib::libConfig()["site_url"];
+                                    if(isset($result["order_user_url"]) && $result["order_user_url"]){
+                                        $return_url = $result["order_user_url"];
+                                    }else if(@HolestPayLib::libConfig()["order_user_url"]){
+                                        $return_url = @HolestPayLib::libConfig()["order_user_url"];
+                                    } 
+                                   
+                                    if(isset($_REQUEST['hpay_local_request']) && $_REQUEST['hpay_local_request']){
+                                        http_response_code(200);
+                                        header("Content-Type:application/json");
+                                        echo json_encode(array("received" => "OK", "accept_result" => "ACCEPTED", "order_user_url" => $return_url));
+                                        die;
+
+                                    }else{
+                                        http_response_code(302);
+                                        header("Location: {$return_url}");
+                                        die();
+                                    }
+                                }
+                                return;
+                            }
+                        }else{
+                            HolestPayLib::writeLog("error",'HPAY aborted payment response processing:' . json_encode($result, JSON_PRETTY_PRINT),5);
+                        }
+                    }
+
+                    //IF RESULT IS NOT ACCEPTED
+                    if(isset($_REQUEST['hpay_local_request']) && $_REQUEST['hpay_local_request']){
+                        http_response_code(200);
+                        echo json_encode(array("received" => "NO", "accept_result" => "REFUSED"));
+                        exit;
+                    }else{
+                        http_response_code(302);
+                        header("Location: " . HolestPayLib::libConfig()["site_cart_url"]);
+                        die();
+                    }
+
+                }
+            }catch(Throwable $ex){
+                HolestPayLib::writeLog("error",$ex->getMessage(),7);
+            }
+            $this->webHooksHandler();
         }
         $this->_webResultHandlerCalled = true;
-
     }
-
+    
     public function webHooksHandler(){
+        if(!$this->_webHooksHandlerCalled){
+            try{
 
+
+            }catch(Throwable $ex){
+                HolestPayLib::writeLog("error",$ex->getMessage(),7);
+            }
+        }
+        $this->_webHooksHandlerCalled = true;
     } 
 
     /**
@@ -692,11 +772,11 @@ trait HolestPayCore{
 		return $html;
 	}
 
-    private function onOrderUpdate(){
+    private function onOrderUpdate($resp, $order = null){
 
     }
 
-    private function acceptResult(){
+    private function acceptResult($order, $result, $pmethod_id = null, $is_webhook = false){
         
     }
 
