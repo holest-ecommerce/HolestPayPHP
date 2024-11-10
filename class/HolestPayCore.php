@@ -145,7 +145,14 @@ trait HolestPayCore{
 
                 if($topic){
                     if($topic == "payresult"){
+                        if($order_uid){
+                           
 
+                        }else{
+                            http_response_code(406);
+                            echo json_encode(array("error" => "order_uid not provided" , "error_code" => 406));
+                            die;
+                        }
                     }else if($topic == "orderupdate"){
 
                         if($order_uid){
@@ -174,11 +181,44 @@ trait HolestPayCore{
                         }
                     }else if($topic == "posconfig-updated"){
 
-                    }else if($topic == "pos-error-logs"){
+                        if(isset($data["environment"]) && isset($data["merchant_site_uid"]) && isset($data["POS"]) && isset($data["checkstr"])){
+							
+							if($data["environment"] == $this->getHSiteConfigParam("environment")){
+								if($data["merchant_site_uid"] == $this->getPOSConnectionParam("merchant_site_uid")){
+									if($data["checkstr"] == md5($this->getPOSConnectionParam("merchant_site_uid") . $this->getPOSConnectionParam("secret_token"))){
+										$this->setHSiteConfig(null, null, $data["POS"]);
+                                        http_response_code(200);
+										echo json_encode(array("received" => "OK", "accept_result" => "POS_CONFIG_UPDATED"));
+										die;
+									}	
+								}
+							}
+						}
+                        http_response_code(406);
+						echo json_encode(array("rejected" => 1, "error" => "REJECTED", "error_code" => 406));
+						die;
 
+                    }else if($topic == "pos-error-logs"){
+                        if(isset($data["environment"]) && isset($data["merchant_site_uid"]) && isset($data["POS"]) && isset($data["checkstr"])){
+							
+							if($data["environment"] == $this->getHSiteConfigParam("environment")){
+								if($data["merchant_site_uid"] == $this->getPOSConnectionParam("merchant_site_uid")){
+									if($data["checkstr"] == md5($this->getPOSConnectionParam("merchant_site_uid") . $this->getPOSConnectionParam("secret_token"))){
+										
+                                        http_response_code(200);
+										echo json_encode(array("received" => "OK", "logs" => HolestPayLib::logProvider()->get_error_logs() ));
+										die;
+
+									}	
+								}
+							}
+						}
+                        http_response_code(406);
+						echo json_encode(array("rejected" => 1, "error" => "REJECTED", "error_code" => 406));
+						die;
                     }else{
                         http_response_code(200);
-                        echo json_encode(array("received" => date("Y-m-d H:i:s"), "error" => "NOT_HANDLED" , "ts" => time() , "topic" => $_GET["topic"]));
+                        echo json_encode(array("received" => date("Y-m-d H:i:s"), "error" => "NOT_HANDLED" , "ts" => time() , "topic" => $topic));
                         die;
                     }
                 }

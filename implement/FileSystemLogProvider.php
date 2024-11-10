@@ -84,5 +84,29 @@ class FileSystemLogProvider extends HolestPayAbstractLogProvider{
         }
     }
 
+    /**
+     * gets error logs
+     * @return array - array of found error logs by date
+     */
+    public function get_error_logs(){
+        $elogs = array();
+        try{
+            if($this->lib_configuration){
+                $files = array_unique(glob($this->lib_configuration["log_provider_folder"] ."/*error.log"));
+               
+                foreach ($files as $file) {
+                    if (is_file($file)) {
+                        if ($threshold <= filemtime($file)) {
+                            $elogs[basename($file)] = @file_get_contents($file);
+                        }
+                    }
+                }
+            }
+        }catch(Throwable $ex){
+            //:( where ???
+        }
+        return $elogs;
+    }
+
 
 }

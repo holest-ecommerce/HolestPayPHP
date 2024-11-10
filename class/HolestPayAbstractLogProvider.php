@@ -19,13 +19,20 @@ abstract class HolestPayAbstractLogProvider {
   //
  }
 
-
 /**
  * writes the data 
  * 
  * @param string $logscope - can be just "error"|"waring"|"log" or something like "order_4635764_result"
  * @param any $data - data to log
- * @return - true on success , false on failure
+ * @return boolean - true on success , false on failure
  */
   abstract public function writeLog($logscope, $data);
+
+/**
+ * gets error logs
+ * @return array - array of found error logs by date
+ */
+  abstract public function get_error_logs();
+
+  
 }
