@@ -106,10 +106,90 @@ trait HolestPayCore{
     public function webHooksHandler(){
         if(!$this->_webHooksHandlerCalled){
             try{
+                header("Content-Type:application/json");
+                $data = json_decode( file_get_contents('php://input'), true);
+                $cfg = HolestPayLib::libConfig();
+                $topic = "";
+                $order_uid = "";
+                $m_ts = intval(microtime(true));
+                $time = date("YmdHis");
 
+                global $__hpay_active_r_file;
+                
 
+                if(isset($_GET["topic"])){
+                    if($_GET["topic"]){
+                        $topic = $_GET["topic"];
+                    }
+                }
+
+                if(isset($_GET["order_uid"])){
+                    if($_GET["order_uid"]){
+                        $order_uid = $_GET["order_uid"];
+                    }
+                }
+
+                if($cfg['log_enabled'] && $cfg['log_debug']){
+                    
+                    if($order_uid){
+                        $__hpay_active_r_file = "wh" . $time . "_{$order_id}_" . ($topic ?? "unknown") . "_" . $m_ts;
+                    }else{
+                        $__hpay_active_r_file = "wh" . $time . "_" . ($topic ?? "unknown") . "_" . $m_ts;
+                    }
+                    
+                    HolestPayLib::writeLog($__hpay_active_r_file, array(
+                        "request_url" => $_SERVER["REQUEST_URI"],
+                        "data" => $data
+                    ));
+                }
+
+                if($topic){
+                    if($topic == "payresult"){
+
+                    }else if($topic == "orderupdate"){
+
+                        if($order_uid){
+                            $res = $this->onOrderUpdate($data);
+
+                            if($__hpay_active_r_file){
+                                HolestPayLib::writeLog($__hpay_active_r_file,array(
+                                    "site_result" => $order_uid,
+                                    "result" => $res
+                                ));
+							}
+							
+							if($res["success"]){
+                                http_response_code(200);
+								echo json_encode(array("received" => "OK", "accept_result" => "ACCEPTED", "info" => $res));
+							}else{
+                                http_response_code(406);
+								echo json_encode(array("rejected" => $res, "error" => "REJECTED", "error_code" => 406));
+							}
+							die;
+
+                        }else{
+                            http_response_code(406);
+                            echo json_encode(array("error" => "order_uid not provided" , "error_code" => 406));
+                            die;
+                        }
+                    }else if($topic == "posconfig-updated"){
+
+                    }else if($topic == "pos-error-logs"){
+
+                    }else{
+                        http_response_code(200);
+                        echo json_encode(array("received" => date("Y-m-d H:i:s"), "error" => "NOT_HANDLED" , "ts" => time() , "topic" => $_GET["topic"]));
+                        die;
+                    }
+                }
+                http_response_code(406);
+                echo json_encode(array("error" => "BAD DATA" , "error_code" => 406));
+                die;
             }catch(Throwable $ex){
                 HolestPayLib::writeLog("error",$ex->getMessage(),7);
+                http_response_code(500);
+                echo json_encode(array("error" => "ERROR" , "error_code" => 500));
+                die;
             }
         }
         $this->_webHooksHandlerCalled = true;
