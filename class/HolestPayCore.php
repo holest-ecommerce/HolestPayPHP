@@ -942,11 +942,946 @@ trait HolestPayCore{
 	}
 
     private function onOrderUpdate($resp, $order = null){
+/*
+global $hpay_doing_order_update;
+		
+		$hpay_doing_order_update = true;
+		
+		try{
+		
+			if(!$resp){
+				$hpay_doing_order_update = false;
+				return array(
+					'success' => false,
+					'message' => __('EMPTY_OUTCOME_DATA','holestpay')
+				);
+			}
+			
+			if(isset($resp["result"])){
+				if(is_string($resp["result"])){
+					unset($resp["result"]);
+				}
+			}
+			
+			if(!isset($resp["status"]) || !isset($resp["order_uid"])){
+				$hpay_doing_order_update = false;
+				return array(
+					'success' => false,
+					'message' => __('BAD_ORDER_DATA','holestpay')
+				);
+			}
+			
+			if($this->verifyResponse($resp)){
+				$reshash = null;
+				if(isset($resp["vhash"])){
+					if($resp["vhash"])
+						$reshash = md5($resp["vhash"]);
+				}
+				
+				$order_id = null;
+				if($order){
+					$order_id = $order->get_id();
+				}
+				
+				if(!$order_id)
+					$order_id = wc_get_order_id_by_order_key($resp["order_uid"]);
+				
+				if(!$order_id){
+					//OVDE PREDVIDETI KREIRANJE
+					$hpay_doing_order_update = false;
+					return array(
+						'success' => false,
+						'message' => __('ORDER_ID_NOT_FOUND','holestpay')
+					);
+				}else{
+					
+					if(!$this->lockHOrderUpdate($resp["order_uid"])){
+						if(!$order)
+							$order = hpay_get_order($order_id);		
+						
+						if($order){
+							return array(
+								'success' => false,
+								'message' => __('CANNOT_GET_ORDER_LOCK','holestpay'),
+								"order_id"          => $order->get_id(),
+								"order_site_status" => $this->wc_order_status_immediate($order->get_id())
+							);
+						}else{
+							return array(
+								'success' => false,
+								'message' => __('CANNOT_GET_ORDER_LOCK','holestpay')
+							);
+						}
+					}
+					
+					if(!$order)
+						$order = hpay_get_order($order_id);
+					
+					$already_received = false;
+					if($this->resultAlreadyReceived($resp)){
+						$already_received = true;
+					}
+					
+					if(!$order){
+						$hpay_doing_order_update = false;
+						$this->unlockHOrderUpdate($resp["order_uid"]);
+						return array(
+							'success' => false,
+							'message' => __('ORDER_NOT_FOUND','holestpay')
+						);
+					}
+					
+					$hpay_responses          = $this->getHPayPayResponses($order);
+					$hpay_responses_dirty = false;
+					
+					$hpay_order = $resp["order"];
+					$hpay_operation = "";
+					
+					$restock = null;
+					
+					if(isset($resp["result"])){
+						if(isset($resp["result"]["restock"])){
+							if($resp["result"]["restock"]){
+								$restock = true;
+							}
+						}
 
+						if(isset($resp["result"]["hpay_operation"])){
+							$hpay_operation = $resp["result"]["hpay_operation"];
+						}						
+					}
+					
+					unset($resp["order"]);
+					
+					if(isset($resp["result"])){
+						if(is_string($resp["result"])){
+							unset($resp["result"]);
+						}
+					}
+					
+					if(isset($resp["result"])){
+						if(is_array($resp["result"])){
+							$resp = array_merge($resp, $resp["result"]);
+						}
+					}
+					
+					$transaction = null; 
+					$hpay_responses_tranuids = array();
+					
+					$is_duplicate_response    = false;
+					$has_transaction_uid      = false;
+					
+					$has_integ_or_ship_update = $this->acceptResponseFiscalAndShipping($order_id,$resp); 
+					
+					$return_after_tran_sync = false;
+					
+					if($already_received && !$order->has_status( 'pending' )){
+						if($reshash){
+							try{
+								$result_existing = get_transient("hpayresp_" . $reshash);
+								if(!$result_existing){
+									sleep(1);
+									$result_existing = get_transient("hpayresp_" . $reshash);
+								}
+								if($result_existing){
+									$result_existing["processed_already"] = true;
+									$this->unlockHOrderUpdate($resp["order_uid"]);
+									return $result_existing;
+								}
+							}catch(Throwable $tex){
+								hpay_write_log("error", $tex);
+							}
+						}
+						$return_after_tran_sync = true;
+					}
+					
+					if(isset($resp)){
+						if(isset($resp["transaction_uid"])){
+							
+							if($resp["transaction_uid"]){
+								$has_transaction_uid = true;
+							}
+							
+							$is_set = false;
+							foreach($hpay_responses as $index => $prev_result){
+								if(isset($prev_result["transaction_uid"])){
+									if($prev_result["transaction_uid"] == $resp["transaction_uid"]){
+										$hpay_responses[$index] = $resp;
+										$is_set = true;
+										$hpay_responses_dirty = true;
+										$is_duplicate_response = true;
+										break;
+									}
+								}
+							}
+							
+							if(!$is_set){
+								if(isset($resp["result"]) && is_array($resp["result"])){
+									$hpay_responses[] = $resp["result"];
+									$hpay_responses_dirty = true;
+								}
+							}
+						}else{
+							if($has_integ_or_ship_update){
+								$resp["transaction_uid"] = "";
+								foreach($hpay_responses as $ind => $prev_resp){
+									if(isset($prev_resp["transaction_uid"])){
+										if($prev_resp["transaction_uid"]){
+											continue;
+										}
+									}
+									unset($hpay_responses[$ind]);
+								}
+								
+							
+								if(isset($resp["result"])){
+									if(is_array($resp["result"]))
+										$hpay_responses[] = $resp["result"];	
+									else 
+										$hpay_responses[] = $resp;	
+								}else{
+									$hpay_responses[] = $resp;	
+								}
+								$hpay_responses_dirty = true;
+							}
+						}
+					}
+					
+					foreach($hpay_responses as $index => $prev_result){
+						if(isset($prev_result["transaction_uid"])){
+							$hpay_responses_tranuids[] = $prev_result["transaction_uid"];
+						}			
+					}
+					
+					if(isset($hpay_order["Transactions"])){
+						usort($hpay_order["Transactions"], function($a, $b){
+							return intval($a["id"]) - intval($b["id"]);
+						});
+						
+						foreach($hpay_order["Transactions"] as $trans){
+							if($trans){
+								if(isset($trans["Data"])){
+									if(is_string($trans["Data"])){
+										$trans["Data"] = json_decode($trans["Data"], true);
+									}
+									
+									if(!in_array($trans["Uid"],$hpay_responses_tranuids)){
+										if(isset($trans["Data"]["result"])){
+											$hpay_responses[] = $trans["Data"]["result"];
+											$hpay_responses_dirty = true;
+										}
+									}
+									
+									if(!$transaction){
+										$transaction = $trans;
+									}else if($transaction["id"] < $trans["id"]){
+										$transaction = $trans;
+									}
+								}
+							}
+						}
+					}
+					
+					if($hpay_responses_dirty){
+						$this->setHPayPayResponses($order, $hpay_responses, false);
+					}
+					
+					
+					
+					if($return_after_tran_sync){
+						if($hpay_responses_dirty){
+							$order->save_meta_data();
+						}
+						$this->unlockHOrderUpdate($resp["order_uid"]);
+						return array(
+							'success' => "",
+							'message' => __('RESULT_ALREADY_ACCEPTED','holestpay'),
+							"order_id"          => $order->get_id(),
+							"order_site_status" => $this->wc_order_status_immediate($order->get_id())
+						);	
+					}
+					
+					$order->update_meta_data("_hpay_status_prev",$order->get_meta("_hpay_status"));
+					$order->update_meta_data("_hpay_status",$resp["status"]);
+					
+					if(strpos($resp["status"],"PAYMENT:PAID") !== false || strpos($resp["status"],"PAYMENT:SUCCESS") !== false){
+						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
+							$wc_ostat = $this->shouldSetStatus($resp, $order);
+							$do_set_status = null;
+							if($wc_ostat){
+								if ( !$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat) ) {
+									$do_set_status = $wc_ostat;
+								}
+							}
+							
+							if($hpay_operation == "capture"){
+								try{
+									if($hpay_order){
+										if(isset($hpay_order["Data"])){
+											if(isset($hpay_order["Data"]["items"])){
+												
+												$current_items = $this->getOrderItems($order, null, true);
+												$items_matches = $this->matchOrderItems($current_items, $hpay_order["Data"]["items"]);
+												
+												$refund_items = array();
+												$rsum         = 0; 				
+												foreach($items_matches as $match){
+													if($match[0] && $match[1]){
+														
+														$rqty = 0;
+														$ramt = 0;
+														$rtax = 0;
+														
+														if(!isset($match[1]["captured"])){
+															continue;
+														}
+														
+														if(@$match[0]["qty"] != @$match[1]["captured_qty"]){
+															$rqty = @$match[0]["qty"] - @$match[1]["captured_qty"];
+															if($rqty < 0){
+																$rqty = 0;
+															}
+														}
+														
+														if(@$match[0]["subtotal"] > @$match[1]["captured"]){
+															$ramt = @$match[1]["subtotal"] - @$match[1]["captured"];
+															
+															if(abs($ramt) < 0.3){
+																$ramt = 0;
+															}
+															
+															$rsum += $ramt;
+															
+															if(@$match[0]["tax_amount"]){
+																$trat = @$match[0]["tax_amount"] / @$match[0]["subtotal"];
+																if($trat > 0){
+																	$rtax = $ramt * $trat;
+																	$ramt -= $rtax;
+																}
+															}
+														}
+														
+														if($rqty > 0 || $ramt > 0){
+															$refund_items[$match[0]["posoitemuid"]] = array(
+																"qty"          => $rqty,
+																"refund_total" => $ramt,
+																"refund_tax"   => $rtax
+															);
+														}
+													}	
+												}
+												
+												if(!empty($refund_items)){
+													$refund_args = array(
+														"amount"   => $rsum,
+														"order_id" => $order->get_id(),
+														"reason"   => __("Partial reserved amount capture/post-authorization","holestpay")
+													);
+															
+													$refund_args["line_items"] = $refund_items;
+													if($restock){
+														$refund_args["restock_items"] = true;
+													}
+													
+													try{
+														remove_all_actions('woocommerce_order_partially_refunded');
+														remove_all_actions('woocommerce_refund_created');
+														remove_all_actions('woocommerce_order_refunded');
+														$refund = wc_create_refund($refund_args);
+													}catch(Throwable $trex){
+														hpay_write_log("error",$trex);
+													}
+												}
+											}
+										}	
+									}
+								}catch(Throwable $crex){
+									hpay_write_log("error",$crex);
+								}
+							}
+							
+							if($do_set_status){
+								$this->setOrderStatus($order,$do_set_status);
+							}
+							
+							if(!$order->is_paid()){
+								//payment_complete must be called after status set!!!
+								$order->payment_complete($transaction["Uid"]);
+							}
+						}else{
+							$wc_ostat = $this->shouldSetStatusBecauseOfDelivery($result, $order);
+							if($wc_ostat){
+								if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat))
+									$this->setOrderStatus($order,$wc_ostat);	
+							}
+						}	
+					}else if(strpos($resp["status"],"PAYMENT:PARTIALLY-REFUNDED") !== false){
+						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
+							$wc_ostat = $this->shouldSetStatus($resp, $order);
+							
+							if(isset($resp["refunded_amount"]) && isset($resp["payment_amount"]) && isset($resp["order_amount"])){
+								try{
+									$r_amt = 0;
+									if(isset($resp["refunded_order_amount"])){
+										$r_amt = floatval($resp["refunded_order_amount"]);
+									}
+									
+									if(!$r_amt){
+										if($hpay_order){
+											if(isset($hpay_order["Data"])){
+												if(isset($hpay_order["Data"]["exchange_rates"])){
+													foreach($hpay_order["Data"]["exchange_rates"] as $pair => $rate_data){
+														if(isset($rate_data["rate"])){
+															$r_amt = floatval($resp["refunded_amount"]) / floatval($rate_data["rate"]);
+														}
+													}
+												}
+											}
+										}	
+										if(!$r_amt){
+											$r_amt = floatval($resp["refunded_amount"]);
+										}
+									}
+									
+									if($r_amt){
+										$r_amt = round($r_amt, 2);
+									}
+									
+									global $hpay_site_refund_ongoing;
+									
+									if(!$hpay_site_refund_ongoing && isset($resp["transaction_uid"]) && !$is_duplicate_response){
+										try{
+											$refunds = $order->get_meta("_hpay_refunds");
+											if(!$refunds){
+												$refunds = array();
+											}
+											if(!isset($refunds[$resp["transaction_uid"]])){	
+												
+												$refund_args = array(
+														"amount"   => $r_amt,
+														"order_id" => $order->get_id(),
+														"reason"   => __("Partial refund","holestpay")
+												);
+												
+												try{
+													
+													if($hpay_order){
+														if(isset($hpay_order["Data"])){
+															if(isset($hpay_order["Data"]["items"])){
+																
+																$current_items = $this->getOrderItems($order, null, true);
+																$items_matches = $this->matchOrderItems($current_items, $hpay_order["Data"]["items"]);
+																
+																$refund_items = array();
+																
+																foreach($items_matches as $match){
+																	if($match[0] && $match[1]){
+																		$rqty = 0;
+																		$ramt = 0;
+																		$rtax = 0;
+																		
+																		if(@$match[0]["qty"] != @$match[1]["qty"]){
+																			$rqty = @$match[0]["qty"] - @$match[1]["qty"];
+																			if($rqty < 0){
+																				$rqty = 0;
+																			}
+																		}
+																		
+																		if(@$match[0]["refunded"] != @$match[1]["refunded"]){
+																			$ramt = @$match[1]["refunded"] - @$match[0]["refunded"];
+																			
+																			if(@$match[0]["tax_amount"]){
+																				$trat = @$match[0]["tax_amount"] / @$match[0]["subtotal"];
+																				if($trat > 0){
+																					$rtax = $ramt * $trat;
+																					$ramt -= $rtax;
+																				}
+																			}
+																		}
+																		
+																		if($rqty > 0 || $ramt > 0){
+																			$refund_items[$match[0]["posoitemuid"]] = array(
+																				"qty"          => $rqty,
+																				"refund_total" => $ramt,
+																				"refund_tax"   => $rtax
+																			);
+																		}
+																	}	
+																}
+																
+																if(!empty($refund_items)){
+																	$refund_args["line_items"] = $refund_items;
+																	if($restock){
+																		$refund_args["restock_items"] = true;
+																	}
+																}
+															}
+														}	
+													}
+												}catch(Throwable $rrex){
+													hpay_write_log("error",$rrex);
+												}
+												
+												$refund = null;
+												try{
+													global $hpay_partial_refunded_orders;
+													if(!isset($hpay_partial_refunded_orders))
+														$hpay_partial_refunded_orders = array();
+													$hpay_partial_refunded_orders[$order->get_id()] = true;
+													
+													// remove_all_actions('woocommerce_order_partially_refunded');
+													// remove_all_actions('woocommerce_refund_created');
+													// remove_all_actions('woocommerce_order_refunded');
+														
+													$refund = wc_create_refund($refund_args);
+												}catch(Throwable $trex){
+													if(isset($refund_args["line_items"])){
+														unset($refund_args["line_items"]);
+														if(isset($refund_args["restock_items"]))
+															unset($refund_args["restock_items"]);
+														
+														$refund = wc_create_refund($refund_args);
+													}else{
+														throw $trex;
+													}
+												}
+														
+												if($refund){
+													if(!is_wp_error($refund)){
+														$refunds[$resp["transaction_uid"]] = $refund->get_id();
+														$order->update_meta_data("_hpay_refunds",$refunds);
+													}else{
+														hpay_write_log("error","WP_Error on wc_create_refund");
+														hpay_write_log("error",$refund->get_error_message());
+													}
+												}
+											}
+										}catch(Throwable $rex){
+											hpay_write_log("error",$rex);
+										}
+									}
+								}catch(Throwable $zdivex){
+									hpay_write_log("error", $zdivex);
+								}
+							}
+							
+							if($wc_ostat){
+								if ( !$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat)) {
+									$this->setOrderStatus($order,$wc_ostat);	
+								}
+							}
+						}else{
+							$wc_ostat = $this->shouldSetStatusBecauseOfDelivery($result, $order);
+							if($wc_ostat){
+								if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat))
+									$this->setOrderStatus($order,$wc_ostat);	
+							}
+						}
+					}else if(strpos($resp["status"],"PAYMENT:VOID") !== false || strpos($resp["status"],"PAYMENT:REFUND") !== false){
+						
+						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
+							
+							if(strpos($resp["status"],"PAYMENT:REFUND") !== false){
+								
+								global $hpay_site_refund_ongoing;
+								if(!$hpay_site_refund_ongoing && isset($resp["transaction_uid"]) && !$is_duplicate_response){
+									try{
+										$refunds = $order->get_meta("_hpay_refunds");
+										if(!$refunds){
+											$refunds = array();
+										}
+										if(!isset($refunds[$resp["transaction_uid"]])){	
+											$refund_args = array(
+													"amount"   => $order->get_remaining_refund_amount(),
+													"order_id" => $order->get_id(),
+													"reason"   => __("Full refund","holestpay")
+											);
+											
+											try{
+												if($hpay_order){
+													if(isset($hpay_order["Data"])){
+														if(isset($hpay_order["Data"]["items"])){
+															
+															$current_items = $this->getOrderItems($order, null, true);
+															$refund_items = array();
+															
+															foreach($current_items as $oitem_id => $item){
+																$refund_items[$oitem_id] = array(
+																	"qty"          => $item["qty"],
+																	"refund_total" => $item["subtotal"] - $item["tax_amount"],
+																	"refund_tax"   => $item["tax_amount"]
+																);
+															}
+															
+															if(!empty($refund_items)){
+																$refund_args["line_items"] = $refund_items;
+																if($restock){
+																	$refund_args["restock_items"] = true;
+																}
+															}
+														}
+													}	
+												}
+											}catch(Throwable $rrex){
+												hpay_write_log("error",$rrex);
+											}
+											
+											$refund = null;
+											try{
+												// remove_all_actions('woocommerce_order_partially_refunded');
+												// remove_all_actions('woocommerce_refund_created');
+												// remove_all_actions('woocommerce_order_refunded');
+														
+												$refund = wc_create_refund($refund_args);
+											}catch(Throwable $trex){
+												if(isset($refund_args["line_items"])){
+													unset($refund_args["line_items"]);
+													if(isset($refund_args["restock_items"]))
+														unset($refund_args["restock_items"]);
+													$refund = wc_create_refund($refund_args);
+												}else{
+													throw $trex;
+												}
+											}
+											
+											if($refund){
+												if(!is_wp_error($refund)){
+													$refunds[$resp["transaction_uid"]] = $refund->get_id();
+													$order->update_meta_data("_hpay_refunds",$refunds);
+												}else{
+													hpay_write_log("error","WP_Error on wc_create_refund");
+													hpay_write_log("error",$refund->get_error_message());
+												}
+											}
+										}
+									}catch(Throwable $rex){
+										hpay_write_log("error", $rex);
+									}
+								}
+							}
+							
+							$wc_ostat = $this->shouldSetStatus($resp, $order);
+							if($wc_ostat){
+								if ( !$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat) ) {
+									$this->setOrderStatus($order,$wc_ostat);	
+								}
+							}
+						}
+					}else if(strpos($resp["status"],"PAYMENT:RESERVED") !== false || strpos($resp["status"],"PAYMENT:AWAITING") !== false){
+						
+						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
+							$wc_ostat = $this->shouldSetStatus($resp, $order);
+							if($wc_ostat){
+								if ( !$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat)) {
+									$this->setOrderStatus($order,$wc_ostat);	
+								}
+							}
+						}else{
+							$wc_ostat = $this->shouldSetStatusBecauseOfDelivery($result, $order);
+							if($wc_ostat){
+								if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat))
+									$this->setOrderStatus($order,$wc_ostat);	
+							}
+						}
+					}
+					
+					$order->save_meta_data();
+					
+					$this->unlockHOrderUpdate($resp["order_uid"]);
+				}
+			}else{
+				$hpay_doing_order_update = false;
+				return array(
+						'success' => false,
+						'message' => __('UNVERIFIED_RESULT','holestpay'),
+						"order_id"          => $order->get_id(),
+						"order_site_status" => $this->wc_order_status_immediate($order->get_id())
+					);
+			}
+			
+			$hpay_doing_order_update = false;	
+			$result = array(
+				'success'           => true,
+				"order_id"          => $order->get_id(),
+				'order_site_status' => $this->wc_order_status_immediate($order->get_id())
+			);
+			
+			if($reshash){
+				try{
+					if(function_exists('set_transient'))
+						set_transient("hpayresp_" . $reshash, $result, 300);
+				}catch(Throwable $tex){
+					hpay_write_log("error", $tex);
+				}
+			}
+			
+			return $result;
+		}catch(Throwable $ex){
+			hpay_write_log("error", $ex);
+			$hpay_doing_order_update = false;
+			$data = array(
+				'success'   => false,
+				'message'   => __('ERROR_EXCEPTION','holestpay'),
+				'exception' => $ex->getMessage()
+			);
+			
+			if($order){
+				$data["order_id"]          = $order->get_id();
+				$data["order_site_status"] = $this->wc_order_status_immediate($order->get_id());
+			}
+			
+			return $data;
+		}
+*/
     }
 
     private function acceptResult($order, $result, $pmethod_id = null, $is_webhook = false){
-        
+/*
+global $hpay_doing_order_update;
+		global $hpay_log_file;
+		
+		if(!$order)
+			return;
+		
+		$order_id = $order->get_id();
+		
+		$hpay_log_file = "H" . date("YmdHis") . "_{$order_id}_result_accept_" . rand(10000,99999);
+		
+		if(!$is_webhook){
+			hpay_write_log($hpay_log_file,json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+		}
+		
+		$hpay_doing_order_update = true;
+		
+		
+		if(!$result || is_string($result)){
+			$hpay_doing_order_update = false;
+			return __('HPAY bad response', 'holestpay') . ": {$result}";
+		}else if(!isset($result["status"]) || !isset($result["request_time"])){
+			$hpay_doing_order_update = false;
+			return __('HPAY bad response object', 'holestpay') . ": " . json_encode($result);
+		}
+		
+		
+		if($this->verifyResponse($result)){
+			
+			$reshash = null;
+			if(isset($result["vhash"])){
+				if($result["vhash"])
+					$reshash = md5($result["vhash"]);
+			}
+				
+			$already_received = false;
+			if($this->resultAlreadyReceived($result)){
+				$already_received = true;
+			}
+			
+			$has_transaction_uid      = false;
+			
+			if(!$this->lockHOrderUpdate($result["order_uid"])){
+				$error = __('HPAY can not lock the order!', 'holestpay');
+				$order->add_order_note( $error  );
+				$hpay_doing_order_update = false;
+				return $error;
+			}
+			
+			if(isset($result["status"])){
+				$order->update_meta_data("_hpay_status_prev",$order->get_meta("_hpay_status"));
+				$order->update_meta_data("_hpay_status", $result["status"]);
+			}
+			
+			$hpay_responses = $this->getHPayPayResponses($order);
+			
+			if(!$is_webhook){
+				hpay_write_log($hpay_log_file,"\r\n<!-- VERIFIED -->\r\n");
+			}
+			
+			$is_duplicate_response = false;
+			if(isset($result["transaction_uid"])){
+				if($result["transaction_uid"]){
+					$has_transaction_uid = true;
+				}
+				
+				foreach($hpay_responses as $prev_result){
+					if(isset($prev_result["transaction_uid"])){
+						if($prev_result["transaction_uid"] == $result["transaction_uid"]){
+							$is_duplicate_response = true;
+							break;
+						}
+					}
+				}
+			}else{
+				$is_duplicate_response = false;
+				$result["transaction_uid"] = "";
+				foreach($hpay_responses as $ind => $prev_resp){
+					if(isset($prev_resp["transaction_uid"])){
+						if($prev_resp["transaction_uid"]){
+							continue;
+						}
+					}
+					unset($hpay_responses[$ind]);
+				}
+			}
+			
+			$hmethod = HPay_Core::payment_method_instance($pmethod_id);
+		
+			$no_tokens = false;
+			if($hmethod){
+				$no_tokens = $hmethod->tokenisation_disallowed();
+			}
+			
+			if($is_duplicate_response){
+				hpay_write_log($hpay_log_file,"<!-- DUPLICATE PREV RESPONSES: " . json_encode($hpay_responses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+			}
+			
+			$order->set_payment_method($hmethod ? $hmethod : $pmethod_id);
+			$order->save();
+			
+			//hpay_write_log("trace", array($order_id, "acceptResult:acceptResponseFiscalAndShipping",$result));
+				
+			$has_integ_or_ship_update = $this->acceptResponseFiscalAndShipping($order_id,$result);
+			
+			if($already_received && !$order->has_status( 'pending' )){
+				$this->unlockHOrderUpdate($result["order_uid"]);
+				return true;
+			}
+			
+			if(!$is_duplicate_response){
+				if(!$is_webhook){
+					hpay_write_log($hpay_log_file, "\r\n<!-- ACCEPTED STORAGE -->\r\n", FILE_APPEND);
+				}
+				
+				if($has_integ_or_ship_update || $has_transaction_uid){
+					$hpay_responses[] = $result;
+					$this->setHPayPayResponses($order, $hpay_responses, false);
+				}
+				
+				$return_result = true;
+				if(strpos($result["status"],"SUCCESS") !== false || strpos($result["status"],"PAID") !== false || strpos($result["status"],"RESERVED") !== false || strpos($result["status"], "AWAITING") !== false){
+					
+					if(!$is_webhook){
+						hpay_write_log($hpay_log_file, "\r\n<!-- acceptResult PAID/SUCCESS/RESERVED/AWAITING -->\r\n", FILE_APPEND);
+					}
+				
+					$clear_cart = true; 
+					if(!$no_tokens && isset($result["vault_token_uid"])){
+						if($result["vault_token_uid"]){
+							if(strlen($result["vault_token_uid"]) >= 10){
+								$customer_user_id  = $order->get_user_id();
+								$merchant_site_uid = $this->getSetting("merchant_site_uid","");
+								
+								$tlng = "en";
+								if(isset($result["hpaylang"])){
+									$tlng = $result["hpaylang"];
+								}
+								if($hmethod){
+									WC_Payment_Token_HPay::create_hpay_token($customer_user_id, $merchant_site_uid, $hmethod->hpay_method_type(), $result["vault_card_brand"], $result["vault_card_umask"], $result["vault_token_uid"], $result["vault_scope"], $result["vault_onlyforuser"], $tlng);
+								}
+							}
+						}
+					}
+					
+					$order->add_order_note( __('HPAY payment completed', 'holestpay') . " " . $result["transaction_uid"] );
+					
+					global $hpay_doing_order_store;
+					if(!$hpay_doing_order_store){
+						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
+							
+							if(!$is_webhook){
+								hpay_write_log($hpay_log_file, "\r\n<!-- maybe set status | hpay payment method resp: {$result["status"]}-->\r\n", FILE_APPEND);
+							}
+							
+							$wc_ostat = $this->shouldSetStatus($result, $order);
+							if($wc_ostat){
+								if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat)){
+									if(!$is_webhook){
+										hpay_write_log($hpay_log_file, "\r\n<!-- status set for hpay payment method resp: {$wc_ostat}-->\r\n", FILE_APPEND);
+									}
+									$this->setOrderStatus($order,$wc_ostat);	
+								}
+							}
+							
+							if(strpos($result["status"],"SUCCESS") !== false || strpos($result["status"],"PAID") !== false){
+								//payment_complete must be called after status set!!!
+								$order->payment_complete($result["transaction_uid"]);
+							}else if (strpos($result["status"],"RESERVED") !== false || strpos($result["status"],"AWAITING") !== false){
+								//
+							}
+						}else{
+							if(!$is_webhook){
+								hpay_write_log($hpay_log_file, "\r\n<!-- maybe set status | non-hpay payment method resp: {$result["status"]}-->\r\n", FILE_APPEND);
+							}
+							$wc_ostat = $this->shouldSetStatusBecauseOfDelivery($result, $order);
+							if($wc_ostat){
+								if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat)){
+									if(!$is_webhook){
+										hpay_write_log($hpay_log_file, "\r\n<!-- status set for non-hpay payment method resp: {$wc_ostat}-->\r\n", FILE_APPEND);
+									}
+									$this->setOrderStatus($order,$wc_ostat);	
+								}
+							}
+						}
+					}
+				}else{
+					global $hpay_doing_order_store;
+					if(!$hpay_doing_order_store){
+						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
+							$wc_ostat = $this->shouldSetStatus($result, $order);
+							if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat)){
+								$this->setOrderStatus($order,'failed', __( 'HPAY payment failed', 'holestpay' ) . " " . $result["transaction_uid"]);
+							}
+						}
+					}
+				}
+			}else{
+				global $hpay_doing_order_store;
+				if(!$hpay_doing_order_store){
+					if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
+						$wc_ostat = $this->shouldSetStatus($result, $order);
+						if($wc_ostat){
+							if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat))
+								$this->setOrderStatus($order,$wc_ostat);	
+						}
+						if(!$order->is_paid() && (strpos($result["status"],"SUCCESS") !== false || strpos($result["status"],"PAID") !== false)){
+							//payment_complete must be called after status set!!!
+							$order->payment_complete($result["transaction_uid"]);
+						}
+					}else{
+						$wc_ostat = $this->shouldSetStatusBecauseOfDelivery($result, $order);
+						if($wc_ostat){
+							if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat))
+								$this->setOrderStatus($order,$wc_ostat);	
+						}
+					}
+				}
+			}
+			
+			$order->save_meta_data();
+			
+			$this->unlockHOrderUpdate($result["order_uid"]);
+			$hpay_doing_order_update = false;
+			
+			if($reshash){
+				$result = array(
+					'success'           => true,
+					"order_id"          => $order->get_id(),
+					'order_site_status' => $this->wc_order_status_immediate($order->get_id())
+				);
+				try{
+					if(function_exists('set_transient'))
+						set_transient("hpayresp_" . $reshash, $result, 300);
+				}catch(Throwable $tex){
+					hpay_write_log("error", $tex);
+				}
+			}
+			return true;
+		}else{
+			$error = __('HPAY response rejected due incorrect verification string!', 'holestpay') . " REF: " . $result["transaction_uid"];
+			$order->add_order_note( $error  );
+			$hpay_doing_order_update = false;
+			return $error;
+		}
+*/
     }
 
     
