@@ -35,7 +35,7 @@ trait HolestPayCore{
                     }
                     $hmethod = null;
                     if(isset($result["order_uid"])){
-                        $order = HolestPayLib::dataProvider()->getHOrder($result["order_uid"]);
+                        $order = $this->getHOrder($result["order_uid"]);
                         if(isset($result["payment_method"])){
                             $hmethod = $this->getPaymentMethod($result["payment_method"]);
                         }
@@ -45,7 +45,7 @@ trait HolestPayCore{
                         }
 
                         if(!$hmethod){
-                            $hmths = HolestPayLib::instance()->getPaymentMethods(true);
+                            $hmths = $this->getPaymentMethods(true);
                             if(!empty($hmths)){
                                 $hmethod = $hmths[0];
                             }
@@ -63,6 +63,8 @@ trait HolestPayCore{
                                     }else if(@HolestPayLib::libConfig()["order_user_url"]){
                                         $return_url = @HolestPayLib::libConfig()["order_user_url"];
                                     } 
+
+                                    $return_url = HolestPayLib::urlAddQSparam($return_url, "result_order_uid", $result["order_uid"]);
                                    
                                     if(isset($_REQUEST['hpay_local_request']) && $_REQUEST['hpay_local_request']){
                                         http_response_code(200);
@@ -146,7 +148,54 @@ trait HolestPayCore{
                 if($topic){
                     if($topic == "payresult"){
                         if($order_uid){
-                           
+                            $pmethod_id = null;
+							$hmethod    = null;
+							
+							if(isset($_GET["pos_pm_id"])){
+								$pmethod_id = $_GET["pos_pm_id"];
+								$hmethod    = $this->getPaymentMethod($pmethod_id);
+                                if($hmethod){
+                                    $pmethod_id = $hmethod["HPaySiteMethodId"];
+                                }
+							}
+							
+							
+							$order = $this->getHOrder($order_uid);
+							if($order){
+								
+								$res = null;
+								if($order)
+									$res = $this->acceptResult($order, $data, $pmethod_id, true);
+								
+								if($__hpay_active_r_file){
+                                    HolestPayLib::writeLog($__hpay_active_r_file,array(
+                                        "site_result" => "payresult",
+                                        "result" => $res
+                                    ));
+								}
+
+    							if($res === true){
+									$return_url = HolestPayLib::libConfig()["site_url"];
+                                    if(isset($order["order_user_url"]) && $order["order_user_url"]){
+                                        $return_url = $order["order_user_url"];
+                                    }else if(@HolestPayLib::libConfig()["order_user_url"]){
+                                        $return_url = @HolestPayLib::libConfig()["order_user_url"];
+                                    }
+                                    
+                                    $return_url = HolestPayLib::urlAddQSparam($return_url, "result_order_uid", $order_uid);
+
+                                    http_response_code(200);
+									echo json_encode(array("received" => "OK", "accept_result" => "ACCEPTED", "order_user_url" => $return_url));
+								}else{
+									http_response_code(406);
+									echo json_encode(array("rejected" => $res, "error" => "REJECTED", "error_code" => 406, "order_user_url" => $return_url));
+								}
+								die;
+							}
+
+                            http_response_code(404);
+							echo json_encode(array("received" => "NO", "accept_result" => "NOT RECOGNISED", "error_code" => 404, "rdiff" => rand(100000,999999)));
+							die;
 
                         }else{
                             http_response_code(406);
@@ -160,7 +209,7 @@ trait HolestPayCore{
 
                             if($__hpay_active_r_file){
                                 HolestPayLib::writeLog($__hpay_active_r_file,array(
-                                    "site_result" => $order_uid,
+                                    "site_result" => "orderupdate",
                                     "result" => $res
                                 ));
 							}

@@ -56,7 +56,7 @@ trait HolestPayNet{
  * Performs HTTP request
  * @param string $url - source url
  * @param assoc_array? $http_request - array("method" => "POST|PUT|...", "headers" => array("Content-Type" => "application/json",...), "blocking" => true|fallse, "body" => ..., "timeout" => 25 )
- * @returns \holestpay\NetResponse
+ * @return \holestpay\NetResponse
  */
     public static function fetch($url, $http_request = false)
     {
@@ -122,6 +122,33 @@ trait HolestPayNet{
         curl_close($ch);
 
         return new \holestpay\NetResponse($response, $httpcode);
+    }
+
+    /**
+     * adds query parameter to url
+     * @param string $url - url to add QS parm to
+     * @param string|array_assoc $param_name_or_assocd - if you are adding single parameter then its name othervise name|value assoc array
+     * @param string $param_value - only if you are adding single parameter - then parameter value
+     * @return string - url with QS parameter(s) added
+     */
+    public static function urlAddQSparam($url, $param_name_or_assocd, $param_value = null){
+              
+        $url_parts = parse_url($url);
+        // If URL doesn't have a query string.
+        if (isset($url_parts['query'])) { // Avoid 'Undefined index: query'
+            parse_str($url_parts['query'], $params);
+        } else {
+            $params = array();
+        }
+        
+        if(is_array($param_name_or_assocd)){
+           $params = array_merge($params, $param_name_or_assocd );
+        }else
+           $params[$param_name_or_assocd] = $param_value;
+
+        $url_parts['query'] = http_build_query($params);
+
+        return $url_parts['scheme'] . '://' . $url_parts['host'] . $url_parts['path'] . '?' . $url_parts['query'];
     }
 
 }
