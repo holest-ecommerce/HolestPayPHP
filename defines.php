@@ -6,6 +6,11 @@
 * Date: October, 2024
 **/
 //IF no argument is passed to init method
+
+if(!defined('HOLESTPAYLIB')){
+    die("Direct access to this file is not allowed");
+}
+
 if(!defined('HOLESTPAYLIB_DEFAULT_CONFIG_SOURCE')){
 	define('HOLESTPAYLIB_DEFAULT_CONFIG_SOURCE',"holestpay.ini");
 }

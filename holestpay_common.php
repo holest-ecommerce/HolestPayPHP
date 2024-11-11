@@ -7,6 +7,10 @@
 **/
 namespace holestpay;
 
+if(!defined('HOLESTPAYLIB')){
+    die("Direct access to this file is not allowed");
+}
+
 if (!function_exists('array_is_list')) {
     function array_is_list(array $arr)
     {
