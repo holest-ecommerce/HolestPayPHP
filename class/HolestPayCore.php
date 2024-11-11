@@ -64,7 +64,7 @@ trait HolestPayCore{
                                         $return_url = @HolestPayLib::libConfig()["order_user_url"];
                                     } 
 
-                                    $return_url = HolestPayLib::urlAddQSparam($return_url, "result_order_uid", $result["order_uid"]);
+                                    $return_url = HolestPayLib::urlAddQSparam($return_url, "user_order_uid", $result["order_uid"]);
                                    
                                     if(isset($_REQUEST['hpay_local_request']) && $_REQUEST['hpay_local_request']){
                                         http_response_code(200);
@@ -134,7 +134,7 @@ trait HolestPayCore{
                 if($cfg['log_enabled'] && $cfg['log_debug']){
                     
                     if($order_uid){
-                        $__hpay_active_r_file = "wh" . $time . "_{$order_id}_" . ($topic ?? "unknown") . "_" . $m_ts;
+                        $__hpay_active_r_file = "wh" . $time . "_{$order_uid}_" . ($topic ?? "unknown") . "_" . $m_ts;
                     }else{
                         $__hpay_active_r_file = "wh" . $time . "_" . ($topic ?? "unknown") . "_" . $m_ts;
                     }
@@ -164,8 +164,7 @@ trait HolestPayCore{
 							if($order){
 								
 								$res = null;
-								if($order)
-									$res = $this->acceptResult($order, $data, $pmethod_id, true);
+								$res = $this->acceptResult($order, $data, $pmethod_id, true);
 								
 								if($__hpay_active_r_file){
                                     HolestPayLib::writeLog($__hpay_active_r_file,array(
@@ -174,17 +173,16 @@ trait HolestPayCore{
                                     ));
 								}
 
-    							if($res === true){
-									$return_url = HolestPayLib::libConfig()["site_url"];
-                                    if(isset($order["order_user_url"]) && $order["order_user_url"]){
-                                        $return_url = $order["order_user_url"];
-                                    }else if(@HolestPayLib::libConfig()["order_user_url"]){
-                                        $return_url = @HolestPayLib::libConfig()["order_user_url"];
-                                    }
-                                    
-                                    $return_url = HolestPayLib::urlAddQSparam($return_url, "result_order_uid", $order_uid);
+								$return_url = HolestPayLib::libConfig()["site_url"];
+								if(isset($order["order_user_url"]) && $order["order_user_url"]){
+									$return_url = $order["order_user_url"];
+								}else if(@HolestPayLib::libConfig()["order_user_url"]){
+									$return_url = @HolestPayLib::libConfig()["order_user_url"];
+								}
+								$return_url = HolestPayLib::urlAddQSparam($return_url, "user_order_uid", $order_uid);
 
-                                    http_response_code(200);
+    							if($res === true){
+								    http_response_code(200);
 									echo json_encode(array("received" => "OK", "accept_result" => "ACCEPTED", "order_user_url" => $return_url));
 								}else{
 									http_response_code(406);
@@ -287,7 +285,7 @@ trait HolestPayCore{
     /**
      * returns current HPay site configuration from local data provider storage. Security parameters & POS configuration is obtained from HPay panel on connect, POS updates are received by site via web-hook when you update POS on HPay panel. Local copy is stored with (data provider)->setSiteConfiguration($hsite_configuration)
      * @param bool $reload - forces re-reading from local data provider storage
-     * @return assoc_array - current HPay site configuration
+     * @return array (assoc) - current HPay site configuration
      */
     public function getHSiteConfig($reload = false){
         if(!$reload && $this->_HSiteConfig){
@@ -396,7 +394,7 @@ trait HolestPayCore{
 
     /**
      * Destroys connection data
-     * @return assoc_array - current full HPay site configuration with false for connection property (that property is named as environment)
+     * @return array (assoc) - current full HPay site configuration with false for connection property (that property is named as environment)
      */
     public function disconnectPOS(){
         return $this->setHSiteConfig(null, false, null);
@@ -405,9 +403,9 @@ trait HolestPayCore{
     /**
      * sets current HPay site environment and/or pos connection and/or pos configuration from data received on connect or when POS parameters are updated on HPay panel. If you pass null to any of arguments current value will be keept
      * @param string $environment - environment
-     * @param assoc_array $pos_connection_params - contains parameters for connection. Crucial one is secret_token
-     * @param assoc_array $pos - POS configuration as recived from HPay
-     * @return assoc_array|false - current full HPay site configuration or false in provided value is invalid
+     * @param array (assoc) $pos_connection_params - contains parameters for connection. Crucial one is secret_token
+     * @param array (assoc) $pos - POS configuration as recived from HPay
+     * @return array (assoc)|false - current full HPay site configuration or false in provided value is invalid
      */
     private function setHSiteConfig($environment, $pos_connection_params, $pos){
         if(!$this->_HSiteConfig)
@@ -633,7 +631,7 @@ trait HolestPayCore{
      * gets HPay status. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default its string, but you may get it as array is you set second prameter as true. In that case you will get array like this array("PAYMENT" => "--PAYMENT_STATUS--", "FISCAL" => array("method1_uid" => array("status1" => "status1_val"), "SHIPPING" => array("method1_uid" => array("status1" => "status1_val"))  ). See hpay status specification ib readme.MD
      * @param string $order_uid - order unique identifikator
      * @param array $as_array - parse reurn value as array
-     * @return string|assoc_array - HPAY status as string or prased if $as_array == true. If parsed reurned array will always have "PAYMENT","FISCAL" and "SHIPPING" keys. If there is nothing their value willl be null 
+     * @return string|array (assoc) - HPAY status as string or prased if $as_array == true. If parsed reurned array will always have "PAYMENT","FISCAL" and "SHIPPING" keys. If there is nothing their value willl be null 
      */
     public function getOrderHPayStatus($order_uid, $as_array = false){
         return HolestPayLib::dataProvider()->getOrderHPayStatus($order_uid, $as_array);
@@ -680,7 +678,7 @@ trait HolestPayCore{
      * extracts only HPay FISCAL&INTEGRATIOS status form full HPay status
      * @param string $order_uid - order unique identifikator
      * @param string $full_status_string - pass full HPay status directly
-     * @return assoc_array - array("method1_uid" => method1_status ...)
+     * @return array (assoc) - array("method1_uid" => method1_status ...)
      */
     public function getOrderHPayFiscalAndIntegrationStatus($order_uid, $full_status_string = null){
         $hstatus = $full_status_string !== null ? $full_status_string : $this->getOrderHPayStatus($order_uid, false);
@@ -705,7 +703,7 @@ trait HolestPayCore{
      * extracts only HPay SHIPPING status form full HPay status
      * @param string $order_uid - order unique identifikator
      * @param string $full_status_string - pass full HPay status directly
-     * @return assoc_array - array("method1_uid" => array( "packet1_code" => packet1_status) ...)
+     * @return array (assoc) - array("method1_uid" => array( "packet1_code" => packet1_status) ...)
      */
     public function getOrderHPayShippingStatus($order_uid, $full_status_string = null){
        $hstatus = $full_status_string !== null ? $full_status_string : $this->getOrderHPayStatus($order_uid, false);
@@ -749,7 +747,7 @@ trait HolestPayCore{
 
     /**
      * Serialized HPay status in assoc array data structure to full HPay status string
-     * @param assoc_array - HPay status in assoc array form
+     * @param array (assoc) - HPay status in assoc array form
      * @return string HPay status in string form 
      */
     public function serializeHStatus($status_data){
@@ -825,9 +823,9 @@ trait HolestPayCore{
     }
 
     /**
-     * sets to HPay status for order. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default all is placed in single string. You can pass assoc_array for value to indicate only update of "PAYMENT","FISCAL" and "SHIPPING" part like array("PAYMENT" => "PAID"). Function needs to preseve all previous and just add ou update statuses (once added status for anything can not just dissapear).  
+     * sets to HPay status for order. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default all is placed in single string. You can pass array (assoc) for value to indicate only update of "PAYMENT","FISCAL" and "SHIPPING" part like array("PAYMENT" => "PAID"). Function needs to preseve all previous and just add ou update statuses (once added status for anything can not just dissapear).  
      * @param string $order_uid - order unique identifikator
-     * @param strinh|assoc_array $hpay_status - full hpay_status as string in its format. Partial status as string for payment or/and fiscal or/and integration or/and shipping metods. Once ste status for some method can not dissapear it can only change value.
+     * @param strinh|array (assoc) $hpay_status - full hpay_status as string in its format. Partial status as string for payment or/and fiscal or/and integration or/and shipping metods. Once ste status for some method can not dissapear it can only change value.
      * @return string - full HPAY status in string form for order in HPay status format
      */
     public function setOrderHPayStatus($order_uid, $hpay_status){
@@ -837,7 +835,7 @@ trait HolestPayCore{
     /**
      * gets HPay order in HolestPay format eather from $order_uid or full site order object 
      * @param string|Order $order_uid_or_site_order - $order_uid to read from data storage or full order object from site to convert to HPay Order
-     * @return assoc_array - HPAY Order
+     * @return array (assoc) - HPAY Order
      */
     public function getHOrder($order_uid_or_site_order){
         return HolestPayLib::dataProvider()->getHOrder($order_uid_or_site_order);
@@ -846,7 +844,7 @@ trait HolestPayCore{
     /**
      * gets HPay cart in HolestPay format eather from $order_uid or full site order or chart object 
      * @param string|Order|Cart $order_uid_or_site_order_or_site_cart - $order_uid to read from data storage or full order object from site to convert to HPay Cart or site Cart object to HPay Cart
-     * @return assoc_array - HPAY Order
+     * @return array (assoc) - HPAY Order
      */  
     public function getHCart($order_uid_or_site_order_or_site_cart){
         return HolestPayLib::dataProvider()->getHCart($order_uid_or_site_order_or_site_cart);
@@ -855,7 +853,7 @@ trait HolestPayCore{
     /**
     * gets array of vault references for user to be used for charge or presented user to choose from. $user_uid is usually email. 
     * @param string $user_uid - user identifier / usually email
-    * @return assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
+    * @return array (assoc) - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
     */ 
     public function getVaultReferences($user_uid){
         return HolestPayLib::dataProvider()->getVaultReferences($user_uid);
@@ -864,7 +862,7 @@ trait HolestPayCore{
     /**
      * adds vault references for user to be used for future charges. $user_uid is usually email.
     * @param string $vault_token_uid - user identifier / usually email
-    * @param assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for 
+    * @param array (assoc) - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for 
     * @return bool - true on success , false on failure
     */  
     public function addVaultReference($user_uid, $vault_data){
@@ -885,7 +883,7 @@ trait HolestPayCore{
      * updates vault reference by its value 
     * @param string $user_uid - user identifier / usually email
     * @param string $vault_token_uid - value of vault reference pointer itself
-    * @param assoc_array $vault_data - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
+    * @param array (assoc) $vault_data - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
     * @return bool - true on success, false on failure
     */  
      public function updateVaultReference($user_uid,$vault_token_uid, $vault_data){
@@ -941,9 +939,173 @@ trait HolestPayCore{
 		return $html;
 	}
 
+	/**
+	 * HPay tries to deliver result to your site in few ways. To prevent result processing at the same time at once use this method to only let first arrived request for same result to be accepted
+	 * @param string $order_uid - order unique identifikator
+	 * @return - true on successful locking otherwise false. If false abandon further execution!
+	 */
+	public function lockOrderUpdate($order_uid){
+		return HolestPayLib::dataProvider()->lockOrderUpdate($order_uid);
+	}
+
+	/**
+	* HPay tries to deliver result to your site in few ways. To prevent result processing at the same time at once use this method to unlock order updates after you successfully accepted result
+	* @param string $order_uid - order unique identifikator
+	* @return bool - true on successful unlocking otherwise false. 
+	*/
+	public function unlockOrderUpdate($order_uid){
+		return HolestPayLib::dataProvider()->unlockOrderUpdate($order_uid);
+	}
+
+	/**
+	* HPay tries to deliver result to your site in few ways. If result has already been accepted you don't need to accept it again. You use md5(verificationhash) or md5(vhash) to get unique result identification. See hpay status specification ib readme.MD
+	* @param string $result_md5_hash. Usualy calculated as md5(verificationhash) or md5(vhash)
+	* @return bool - true if result was already accepted otherwise false.  
+	*/
+	public function resultAlreadyReceived($order_uid, $result_md5_hash){
+		return HolestPayLib::dataProvider()->resultAlreadyReceived($order_uid, $result_md5_hash);
+	}
+
+	/**
+	 * Accepts and writes fisacal&integration and shipping data for order
+	 * @param string $order_uid - order unique identifikator
+	 * @param array $resp (assoc) - response data that is beeing accepted 
+	 * @return boolean - true is something is updated, otherwise false
+	 */
+	private function acceptResponseFiscalAndShipping($order_uid, & $resp){
+		
+		if(!$resp)
+			return false;
+
+		$something_updated = false;	
+		
+		if(isset($resp["fiscal_user_info"])){
+			//MAY BE SINGLE OR ARRAY!
+			
+			if(!array_is_list($resp["fiscal_user_info"])){
+				$resp["fiscal_user_info"] = array($resp["fiscal_user_info"]);
+			}
+			
+			$fiscal_user_info = HolestPayLib::dataProvider()->getFiscalOrIntegrationData($order_uid);
+
+			if(empty($fiscal_user_info)){
+				HolestPayLib::dataProvider()->writeFiscalOrIntegrationData($order_uid,$resp["fiscal_user_info"]);
+				$something_updated = true;
+			}else{
+				
+				if(!array_is_list($fiscal_user_info)){
+					$fiscal_user_info = array($fiscal_user_info);
+				}
+
+				$fmethods_existing = array();
+				foreach($fiscal_user_info as $index => $fi){
+					if(isset($fi["method_uid"])){
+						$fmethods_existing[$fi["method_uid"]] = $index;
+					}else{
+						$fmethods_existing[""] = $index;
+					}
+				}
+				
+				foreach($resp["fiscal_user_info"] as $fi){
+					$method_uid = "";
+					if(isset($fi["method_uid"])){
+						$method_uid = $fi["method_uid"];
+					}
+					if(isset($fmethods_existing[$method_uid])){
+						$fiscal_user_info[$fmethods_existing[$method_uid]] = $fi;
+					}else{
+						$fiscal_user_info[] = $fi;
+					}
+				}
+				
+				HolestPayLib::dataProvider()->writeFiscalOrIntegrationData($order_uid,$fiscal_user_info);
+				$something_updated = true;
+			}
+		}
+		
+		if(isset($resp["shipping_user_info"])){
+			//MAY BE SINGLE OR ARRAY!
+			if(!array_is_list($resp["shipping_user_info"])){
+				$resp["shipping_user_info"] = array($resp["shipping_user_info"]);
+			}
+			
+			$shipping_user_info = HolestPayLib::dataProvider()->getShippingData($order_uid);
+
+			if(empty($shipping_user_info)){
+				HolestPayLib::dataProvider()->writeShippingData($order_uid,$resp["shipping_user_info"]);
+				$something_updated = true;
+			}else{
+				
+				if(!array_is_list($shipping_user_info)){
+					$shipping_user_info = array($shipping_user_info);
+				}
+				
+				$smethods_existing = array();
+				foreach($shipping_user_info as $index => $fi){
+					if(isset($fi["method_uid"])){
+						$smethods_existing[$fi["method_uid"]] = $index;
+					}else{
+						$smethods_existing[""] = $index;
+					}
+				}
+				
+				foreach($resp["shipping_user_info"] as $fi){
+					$method_uid = "";
+					if(isset($fi["method_uid"])){
+						$method_uid = $fi["method_uid"];
+					}
+					if(isset($smethods_existing[$method_uid])){
+						$shipping_user_info[$smethods_existing[$method_uid]] = $fi;
+					}else{
+						$shipping_user_info[] = $fi;
+					}
+				}
+				
+				HolestPayLib::dataProvider()->writeShippingData($order_uid,$shipping_user_info);
+				$something_updated = true;
+			}
+		}
+		
+		$existing_fhtml = HolestPayLib::dataProvider()->getFiscalOrIntegrationResponseHTML($order_uid);
+		$existing_shtml = HolestPayLib::dataProvider()->getShippingResponseHTML($order_uid);
+		
+		if(!$existing_fhtml){
+			$existing_fhtml = "";
+		}
+		
+		if(!$existing_shtml){
+			$existing_shtml = "";
+		}
+		
+		if(isset($resp["fiscal_user_info"])){
+			unset($resp["fiscal_user_info"]);
+		}
+		
+		if(isset($resp["shipping_user_info"])){
+			unset($resp["shipping_user_info"]);
+		}
+		
+		
+		if(isset($resp["fiscal_html"])){
+			$merged = $this->mergeMethodsHTMLOutputs($resp["fiscal_html"], $existing_fhtml);
+			HolestPayLib::dataProvider()->writeFiscalOrIntegrationResponseHTML($order_uid, $merged);
+			unset($resp["fiscal_html"]);
+			$something_updated = true;
+		}
+		
+		if(isset($resp["shipping_html"])){
+			$merged = $this->mergeMethodsHTMLOutputs($resp["shipping_html"], $existing_shtml);
+			HolestPayLib::dataProvider()->writeFiscalOrIntegrationResponseHTML($order_uid, $merged);
+			unset($resp["shipping_html"]);
+			$something_updated = true;
+		}
+		
+		return $something_updated;
+	}
+
     private function onOrderUpdate($resp, $order = null){
-/*
-global $hpay_doing_order_update;
+
+		global $hpay_doing_order_update;
 		
 		$hpay_doing_order_update = true;
 		
@@ -953,7 +1115,7 @@ global $hpay_doing_order_update;
 				$hpay_doing_order_update = false;
 				return array(
 					'success' => false,
-					'message' => __('EMPTY_OUTCOME_DATA','holestpay')
+					'message' => HolestPayLib::__('EMPTY_OUTCOME_DATA')
 				);
 			}
 			
@@ -967,10 +1129,15 @@ global $hpay_doing_order_update;
 				$hpay_doing_order_update = false;
 				return array(
 					'success' => false,
-					'message' => __('BAD_ORDER_DATA','holestpay')
+					'message' => HolestPayLib::__('BAD_ORDER_DATA')
 				);
 			}
 			
+			$order_uid = null;
+			if(isset($resp["order_uid"])){
+				$order_uid = $resp["order_uid"];
+			}
+
 			if($this->verifyResponse($resp)){
 				$reshash = null;
 				if(isset($resp["vhash"])){
@@ -978,60 +1145,45 @@ global $hpay_doing_order_update;
 						$reshash = md5($resp["vhash"]);
 				}
 				
-				$order_id = null;
-				if($order){
-					$order_id = $order->get_id();
+				
+
+				if(!$order && $order_uid){
+					$order = $this->getHOrder($order_uid);
 				}
 				
-				if(!$order_id)
-					$order_id = wc_get_order_id_by_order_key($resp["order_uid"]);
-				
-				if(!$order_id){
+				if(!$order){
 					//OVDE PREDVIDETI KREIRANJE
 					$hpay_doing_order_update = false;
 					return array(
 						'success' => false,
-						'message' => __('ORDER_ID_NOT_FOUND','holestpay')
+						'message' => HolestPayLib::__('ORDER_ID_NOT_FOUND')
 					);
 				}else{
 					
-					if(!$this->lockHOrderUpdate($resp["order_uid"])){
-						if(!$order)
-							$order = hpay_get_order($order_id);		
-						
+					if(!$this->lockHOrderUpdate($order_uid)){
 						if($order){
 							return array(
-								'success' => false,
-								'message' => __('CANNOT_GET_ORDER_LOCK','holestpay'),
-								"order_id"          => $order->get_id(),
-								"order_site_status" => $this->wc_order_status_immediate($order->get_id())
+								'success'           => false,
+								'message'           => HolestPayLib::__('CANNOT_GET_ORDER_LOCK'),
+								"order_id"          => $order_uid,
+								"order_site_status" => $this->getOrderHPayStatus($order_uid)
 							);
 						}else{
 							return array(
 								'success' => false,
-								'message' => __('CANNOT_GET_ORDER_LOCK','holestpay')
+								'message' => HolestPayLib::__('CANNOT_GET_ORDER_LOCK')
 							);
 						}
 					}
 					
-					if(!$order)
-						$order = hpay_get_order($order_id);
-					
-					$already_received = false;
-					if($this->resultAlreadyReceived($resp)){
-						$already_received = true;
+					$already_received = $this->resultAlreadyReceived($order_uid, $reshash);
+					if($already_received === true){
+						//other process that first started to handle result is still execting
+						sleep(2);
+						$already_received = $this->resultAlreadyReceived($order_uid, $reshash);
 					}
 					
-					if(!$order){
-						$hpay_doing_order_update = false;
-						$this->unlockHOrderUpdate($resp["order_uid"]);
-						return array(
-							'success' => false,
-							'message' => __('ORDER_NOT_FOUND','holestpay')
-						);
-					}
-					
-					$hpay_responses          = $this->getHPayPayResponses($order);
+					$hpay_responses          = $this->getResultsForOrder($order_uid);
 					$hpay_responses_dirty = false;
 					
 					$hpay_order = $resp["order"];
@@ -1069,39 +1221,43 @@ global $hpay_doing_order_update;
 					$hpay_responses_tranuids = array();
 					
 					$is_duplicate_response    = false;
-					$has_transaction_uid      = false;
+										
+					$has_integ_or_ship_update = $this->acceptResponseFiscalAndShipping($order_uid,$resp); 
 					
-					$has_integ_or_ship_update = $this->acceptResponseFiscalAndShipping($order_id,$resp); 
-					
-					$return_after_tran_sync = false;
-					
-					if($already_received && !$order->has_status( 'pending' )){
+					if($already_received){
 						if($reshash){
 							try{
-								$result_existing = get_transient("hpayresp_" . $reshash);
-								if(!$result_existing){
-									sleep(1);
-									$result_existing = get_transient("hpayresp_" . $reshash);
+
+								if($already_received === true){
+									//other process that first started to handle result is still execting
+									sleep(2);
+									$already_received = $this->resultAlreadyReceived($order_uid, $reshash);
 								}
-								if($result_existing){
+
+								if($already_received === true){
+									//other process that first started to handle result is still execting
+									sleep(2);
+									$already_received = $this->resultAlreadyReceived($order_uid, $reshash);
+								}
+
+								if($already_received !== true){
 									$result_existing["processed_already"] = true;
 									$this->unlockHOrderUpdate($resp["order_uid"]);
-									return $result_existing;
+									return $already_received;
+								}else{
+									//6 seconds ??? - try again then
+									$already_received = false;
 								}
+
 							}catch(Throwable $tex){
-								hpay_write_log("error", $tex);
+								HolestPayLib::writeLog("error", $tex,5);
 							}
 						}
-						$return_after_tran_sync = true;
+						
 					}
 					
 					if(isset($resp)){
 						if(isset($resp["transaction_uid"])){
-							
-							if($resp["transaction_uid"]){
-								$has_transaction_uid = true;
-							}
-							
 							$is_set = false;
 							foreach($hpay_responses as $index => $prev_result){
 								if(isset($prev_result["transaction_uid"])){
@@ -1109,7 +1265,6 @@ global $hpay_doing_order_update;
 										$hpay_responses[$index] = $resp;
 										$is_set = true;
 										$hpay_responses_dirty = true;
-										$is_duplicate_response = true;
 										break;
 									}
 								}
@@ -1133,7 +1288,6 @@ global $hpay_doing_order_update;
 									unset($hpay_responses[$ind]);
 								}
 								
-							
 								if(isset($resp["result"])){
 									if(is_array($resp["result"]))
 										$hpay_responses[] = $resp["result"];	
@@ -1183,409 +1337,87 @@ global $hpay_doing_order_update;
 					}
 					
 					if($hpay_responses_dirty){
-						$this->setHPayPayResponses($order, $hpay_responses, false);
+						HolestPayLib::dataProvider()->writeResultsForOrder($order_uid, $hpay_responses);
 					}
 					
-					
-					
-					if($return_after_tran_sync){
-						if($hpay_responses_dirty){
-							$order->save_meta_data();
-						}
-						$this->unlockHOrderUpdate($resp["order_uid"]);
-						return array(
-							'success' => "",
-							'message' => __('RESULT_ALREADY_ACCEPTED','holestpay'),
-							"order_id"          => $order->get_id(),
-							"order_site_status" => $this->wc_order_status_immediate($order->get_id())
-						);	
-					}
-					
-					$order->update_meta_data("_hpay_status_prev",$order->get_meta("_hpay_status"));
-					$order->update_meta_data("_hpay_status",$resp["status"]);
-					
+					HolestPayLib::dataProvider()->setOrderHPayStatus($order_uid, $resp["status"]);
+
 					if(strpos($resp["status"],"PAYMENT:PAID") !== false || strpos($resp["status"],"PAYMENT:SUCCESS") !== false){
-						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
-							$wc_ostat = $this->shouldSetStatus($resp, $order);
-							$do_set_status = null;
-							if($wc_ostat){
-								if ( !$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat) ) {
-									$do_set_status = $wc_ostat;
-								}
-							}
-							
+						if(isset($order["payment_method"]) && intval($order["payment_method"])){
 							if($hpay_operation == "capture"){
 								try{
 									if($hpay_order){
 										if(isset($hpay_order["Data"])){
 											if(isset($hpay_order["Data"]["items"])){
-												
-												$current_items = $this->getOrderItems($order, null, true);
-												$items_matches = $this->matchOrderItems($current_items, $hpay_order["Data"]["items"]);
-												
-												$refund_items = array();
-												$rsum         = 0; 				
-												foreach($items_matches as $match){
-													if($match[0] && $match[1]){
-														
-														$rqty = 0;
-														$ramt = 0;
-														$rtax = 0;
-														
-														if(!isset($match[1]["captured"])){
-															continue;
-														}
-														
-														if(@$match[0]["qty"] != @$match[1]["captured_qty"]){
-															$rqty = @$match[0]["qty"] - @$match[1]["captured_qty"];
-															if($rqty < 0){
-																$rqty = 0;
-															}
-														}
-														
-														if(@$match[0]["subtotal"] > @$match[1]["captured"]){
-															$ramt = @$match[1]["subtotal"] - @$match[1]["captured"];
-															
-															if(abs($ramt) < 0.3){
-																$ramt = 0;
-															}
-															
-															$rsum += $ramt;
-															
-															if(@$match[0]["tax_amount"]){
-																$trat = @$match[0]["tax_amount"] / @$match[0]["subtotal"];
-																if($trat > 0){
-																	$rtax = $ramt * $trat;
-																	$ramt -= $rtax;
-																}
-															}
-														}
-														
-														if($rqty > 0 || $ramt > 0){
-															$refund_items[$match[0]["posoitemuid"]] = array(
-																"qty"          => $rqty,
-																"refund_total" => $ramt,
-																"refund_tax"   => $rtax
-															);
-														}
-													}	
-												}
-												
-												if(!empty($refund_items)){
-													$refund_args = array(
-														"amount"   => $rsum,
-														"order_id" => $order->get_id(),
-														"reason"   => __("Partial reserved amount capture/post-authorization","holestpay")
-													);
-															
-													$refund_args["line_items"] = $refund_items;
-													if($restock){
-														$refund_args["restock_items"] = true;
-													}
-													
-													try{
-														remove_all_actions('woocommerce_order_partially_refunded');
-														remove_all_actions('woocommerce_refund_created');
-														remove_all_actions('woocommerce_order_refunded');
-														$refund = wc_create_refund($refund_args);
-													}catch(Throwable $trex){
-														hpay_write_log("error",$trex);
-													}
-												}
+
+												HolestPayLib::dataProvider()->updateOrder($order_uid,array(
+													"order_items" => $hpay_order["Data"]["items"]
+												));
+
 											}
 										}	
 									}
 								}catch(Throwable $crex){
-									hpay_write_log("error",$crex);
+									HolestPayLib::writeLog("error",$crex,6);
 								}
 							}
-							
-							if($do_set_status){
-								$this->setOrderStatus($order,$do_set_status);
-							}
-							
-							if(!$order->is_paid()){
-								//payment_complete must be called after status set!!!
-								$order->payment_complete($transaction["Uid"]);
-							}
-						}else{
-							$wc_ostat = $this->shouldSetStatusBecauseOfDelivery($result, $order);
-							if($wc_ostat){
-								if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat))
-									$this->setOrderStatus($order,$wc_ostat);	
-							}
-						}	
+						}
 					}else if(strpos($resp["status"],"PAYMENT:PARTIALLY-REFUNDED") !== false){
-						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
-							$wc_ostat = $this->shouldSetStatus($resp, $order);
-							
-							if(isset($resp["refunded_amount"]) && isset($resp["payment_amount"]) && isset($resp["order_amount"])){
-								try{
-									$r_amt = 0;
-									if(isset($resp["refunded_order_amount"])){
-										$r_amt = floatval($resp["refunded_order_amount"]);
-									}
-									
-									if(!$r_amt){
-										if($hpay_order){
-											if(isset($hpay_order["Data"])){
-												if(isset($hpay_order["Data"]["exchange_rates"])){
-													foreach($hpay_order["Data"]["exchange_rates"] as $pair => $rate_data){
-														if(isset($rate_data["rate"])){
-															$r_amt = floatval($resp["refunded_amount"]) / floatval($rate_data["rate"]);
-														}
-													}
-												}
-											}
-										}	
-										if(!$r_amt){
-											$r_amt = floatval($resp["refunded_amount"]);
+						if(isset($order["payment_method"]) && intval($order["payment_method"])){
+							try{
+								if($hpay_order){
+									if(isset($hpay_order["Data"])){
+										if(isset($hpay_order["Data"]["items"])){
+
+											HolestPayLib::dataProvider()->updateOrder($order_uid,array(
+												"order_items" => $hpay_order["Data"]["items"]
+											));
+
 										}
-									}
-									
-									if($r_amt){
-										$r_amt = round($r_amt, 2);
-									}
-									
-									global $hpay_site_refund_ongoing;
-									
-									if(!$hpay_site_refund_ongoing && isset($resp["transaction_uid"]) && !$is_duplicate_response){
-										try{
-											$refunds = $order->get_meta("_hpay_refunds");
-											if(!$refunds){
-												$refunds = array();
-											}
-											if(!isset($refunds[$resp["transaction_uid"]])){	
-												
-												$refund_args = array(
-														"amount"   => $r_amt,
-														"order_id" => $order->get_id(),
-														"reason"   => __("Partial refund","holestpay")
-												);
-												
-												try{
-													
-													if($hpay_order){
-														if(isset($hpay_order["Data"])){
-															if(isset($hpay_order["Data"]["items"])){
-																
-																$current_items = $this->getOrderItems($order, null, true);
-																$items_matches = $this->matchOrderItems($current_items, $hpay_order["Data"]["items"]);
-																
-																$refund_items = array();
-																
-																foreach($items_matches as $match){
-																	if($match[0] && $match[1]){
-																		$rqty = 0;
-																		$ramt = 0;
-																		$rtax = 0;
-																		
-																		if(@$match[0]["qty"] != @$match[1]["qty"]){
-																			$rqty = @$match[0]["qty"] - @$match[1]["qty"];
-																			if($rqty < 0){
-																				$rqty = 0;
-																			}
-																		}
-																		
-																		if(@$match[0]["refunded"] != @$match[1]["refunded"]){
-																			$ramt = @$match[1]["refunded"] - @$match[0]["refunded"];
-																			
-																			if(@$match[0]["tax_amount"]){
-																				$trat = @$match[0]["tax_amount"] / @$match[0]["subtotal"];
-																				if($trat > 0){
-																					$rtax = $ramt * $trat;
-																					$ramt -= $rtax;
-																				}
-																			}
-																		}
-																		
-																		if($rqty > 0 || $ramt > 0){
-																			$refund_items[$match[0]["posoitemuid"]] = array(
-																				"qty"          => $rqty,
-																				"refund_total" => $ramt,
-																				"refund_tax"   => $rtax
-																			);
-																		}
-																	}	
-																}
-																
-																if(!empty($refund_items)){
-																	$refund_args["line_items"] = $refund_items;
-																	if($restock){
-																		$refund_args["restock_items"] = true;
-																	}
-																}
-															}
-														}	
-													}
-												}catch(Throwable $rrex){
-													hpay_write_log("error",$rrex);
-												}
-												
-												$refund = null;
-												try{
-													global $hpay_partial_refunded_orders;
-													if(!isset($hpay_partial_refunded_orders))
-														$hpay_partial_refunded_orders = array();
-													$hpay_partial_refunded_orders[$order->get_id()] = true;
-													
-													// remove_all_actions('woocommerce_order_partially_refunded');
-													// remove_all_actions('woocommerce_refund_created');
-													// remove_all_actions('woocommerce_order_refunded');
-														
-													$refund = wc_create_refund($refund_args);
-												}catch(Throwable $trex){
-													if(isset($refund_args["line_items"])){
-														unset($refund_args["line_items"]);
-														if(isset($refund_args["restock_items"]))
-															unset($refund_args["restock_items"]);
-														
-														$refund = wc_create_refund($refund_args);
-													}else{
-														throw $trex;
-													}
-												}
-														
-												if($refund){
-													if(!is_wp_error($refund)){
-														$refunds[$resp["transaction_uid"]] = $refund->get_id();
-														$order->update_meta_data("_hpay_refunds",$refunds);
-													}else{
-														hpay_write_log("error","WP_Error on wc_create_refund");
-														hpay_write_log("error",$refund->get_error_message());
-													}
-												}
-											}
-										}catch(Throwable $rex){
-											hpay_write_log("error",$rex);
-										}
-									}
-								}catch(Throwable $zdivex){
-									hpay_write_log("error", $zdivex);
+									}	
 								}
-							}
-							
-							if($wc_ostat){
-								if ( !$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat)) {
-									$this->setOrderStatus($order,$wc_ostat);	
-								}
-							}
-						}else{
-							$wc_ostat = $this->shouldSetStatusBecauseOfDelivery($result, $order);
-							if($wc_ostat){
-								if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat))
-									$this->setOrderStatus($order,$wc_ostat);	
+							}catch(Throwable $crex){
+								HolestPayLib::writeLog("error",$crex,6);
 							}
 						}
 					}else if(strpos($resp["status"],"PAYMENT:VOID") !== false || strpos($resp["status"],"PAYMENT:REFUND") !== false){
-						
-						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
-							
-							if(strpos($resp["status"],"PAYMENT:REFUND") !== false){
-								
-								global $hpay_site_refund_ongoing;
-								if(!$hpay_site_refund_ongoing && isset($resp["transaction_uid"]) && !$is_duplicate_response){
-									try{
-										$refunds = $order->get_meta("_hpay_refunds");
-										if(!$refunds){
-											$refunds = array();
+						if(isset($order["payment_method"]) && intval($order["payment_method"])){
+							try{
+								if($hpay_order){
+									if(isset($hpay_order["Data"])){
+										if(isset($hpay_order["Data"]["items"])){
+
+											HolestPayLib::dataProvider()->updateOrder($order_uid,array(
+												"order_items" => $hpay_order["Data"]["items"]
+											));
+
 										}
-										if(!isset($refunds[$resp["transaction_uid"]])){	
-											$refund_args = array(
-													"amount"   => $order->get_remaining_refund_amount(),
-													"order_id" => $order->get_id(),
-													"reason"   => __("Full refund","holestpay")
-											);
-											
-											try{
-												if($hpay_order){
-													if(isset($hpay_order["Data"])){
-														if(isset($hpay_order["Data"]["items"])){
-															
-															$current_items = $this->getOrderItems($order, null, true);
-															$refund_items = array();
-															
-															foreach($current_items as $oitem_id => $item){
-																$refund_items[$oitem_id] = array(
-																	"qty"          => $item["qty"],
-																	"refund_total" => $item["subtotal"] - $item["tax_amount"],
-																	"refund_tax"   => $item["tax_amount"]
-																);
-															}
-															
-															if(!empty($refund_items)){
-																$refund_args["line_items"] = $refund_items;
-																if($restock){
-																	$refund_args["restock_items"] = true;
-																}
-															}
-														}
-													}	
-												}
-											}catch(Throwable $rrex){
-												hpay_write_log("error",$rrex);
-											}
-											
-											$refund = null;
-											try{
-												// remove_all_actions('woocommerce_order_partially_refunded');
-												// remove_all_actions('woocommerce_refund_created');
-												// remove_all_actions('woocommerce_order_refunded');
-														
-												$refund = wc_create_refund($refund_args);
-											}catch(Throwable $trex){
-												if(isset($refund_args["line_items"])){
-													unset($refund_args["line_items"]);
-													if(isset($refund_args["restock_items"]))
-														unset($refund_args["restock_items"]);
-													$refund = wc_create_refund($refund_args);
-												}else{
-													throw $trex;
-												}
-											}
-											
-											if($refund){
-												if(!is_wp_error($refund)){
-													$refunds[$resp["transaction_uid"]] = $refund->get_id();
-													$order->update_meta_data("_hpay_refunds",$refunds);
-												}else{
-													hpay_write_log("error","WP_Error on wc_create_refund");
-													hpay_write_log("error",$refund->get_error_message());
-												}
-											}
-										}
-									}catch(Throwable $rex){
-										hpay_write_log("error", $rex);
-									}
+									}	
 								}
-							}
-							
-							$wc_ostat = $this->shouldSetStatus($resp, $order);
-							if($wc_ostat){
-								if ( !$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat) ) {
-									$this->setOrderStatus($order,$wc_ostat);	
-								}
+							}catch(Throwable $crex){
+								HolestPayLib::writeLog("error",$crex,6);
 							}
 						}
 					}else if(strpos($resp["status"],"PAYMENT:RESERVED") !== false || strpos($resp["status"],"PAYMENT:AWAITING") !== false){
 						
-						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
-							$wc_ostat = $this->shouldSetStatus($resp, $order);
-							if($wc_ostat){
-								if ( !$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat)) {
-									$this->setOrderStatus($order,$wc_ostat);	
+						if(isset($order["payment_method"]) && intval($order["payment_method"])){
+							try{
+								if($hpay_order){
+									if(isset($hpay_order["Data"])){
+										if(isset($hpay_order["Data"]["items"])){
+
+											HolestPayLib::dataProvider()->updateOrder($order_uid,array(
+												"order_items" => $hpay_order["Data"]["items"]
+											));
+
+										}
+									}	
 								}
-							}
-						}else{
-							$wc_ostat = $this->shouldSetStatusBecauseOfDelivery($result, $order);
-							if($wc_ostat){
-								if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat))
-									$this->setOrderStatus($order,$wc_ostat);	
+							}catch(Throwable $crex){
+								HolestPayLib::writeLog("error",$crex,6);
 							}
 						}
 					}
-					
-					$order->save_meta_data();
 					
 					$this->unlockHOrderUpdate($resp["order_uid"]);
 				}
@@ -1593,297 +1425,57 @@ global $hpay_doing_order_update;
 				$hpay_doing_order_update = false;
 				return array(
 						'success' => false,
-						'message' => __('UNVERIFIED_RESULT','holestpay'),
-						"order_id"          => $order->get_id(),
-						"order_site_status" => $this->wc_order_status_immediate($order->get_id())
+						'message' => HolestPayLib::__('UNVERIFIED_RESULT'),
+						"order_id"          => $order_uid,
+						"order_site_status" => $this->getOrderHPayStatus($order_uid)
 					);
 			}
 			
 			$hpay_doing_order_update = false;	
 			$result = array(
 				'success'           => true,
-				"order_id"          => $order->get_id(),
-				'order_site_status' => $this->wc_order_status_immediate($order->get_id())
+				"order_id"          => $order_uid,
+				'order_site_status' => $this->getOrderHPayStatus($order_uid)
 			);
 			
 			if($reshash){
 				try{
-					if(function_exists('set_transient'))
-						set_transient("hpayresp_" . $reshash, $result, 300);
+					HolestPayLib::dataProvider()->resultReceivedSave($order_uid,$reshash, $result);
 				}catch(Throwable $tex){
-					hpay_write_log("error", $tex);
+					HolestPayLib::writeLog("error", $tex, 6);
 				}
 			}
 			
 			return $result;
 		}catch(Throwable $ex){
-			hpay_write_log("error", $ex);
+
+			HolestPayLib::writeLog("error", $ex, 6);
 			$hpay_doing_order_update = false;
 			$data = array(
 				'success'   => false,
-				'message'   => __('ERROR_EXCEPTION','holestpay'),
+				'message'   => HolestPayLib::__('ERROR_EXCEPTION'),
 				'exception' => $ex->getMessage()
 			);
 			
 			if($order){
-				$data["order_id"]          = $order->get_id();
-				$data["order_site_status"] = $this->wc_order_status_immediate($order->get_id());
+				$data["order_id"]          = $order_uid;
+				$data["order_site_status"] = $this->getOrderHPayStatus($order_uid);
 			}
 			
 			return $data;
 		}
-*/
     }
 
     private function acceptResult($order, $result, $pmethod_id = null, $is_webhook = false){
-/*
-global $hpay_doing_order_update;
-		global $hpay_log_file;
-		
-		if(!$order)
-			return;
-		
-		$order_id = $order->get_id();
-		
-		$hpay_log_file = "H" . date("YmdHis") . "_{$order_id}_result_accept_" . rand(10000,99999);
-		
-		if(!$is_webhook){
-			hpay_write_log($hpay_log_file,json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-		}
-		
-		$hpay_doing_order_update = true;
-		
-		
-		if(!$result || is_string($result)){
-			$hpay_doing_order_update = false;
-			return __('HPAY bad response', 'holestpay') . ": {$result}";
-		}else if(!isset($result["status"]) || !isset($result["request_time"])){
-			$hpay_doing_order_update = false;
-			return __('HPAY bad response object', 'holestpay') . ": " . json_encode($result);
-		}
-		
-		
-		if($this->verifyResponse($result)){
-			
-			$reshash = null;
-			if(isset($result["vhash"])){
-				if($result["vhash"])
-					$reshash = md5($result["vhash"]);
-			}
-				
-			$already_received = false;
-			if($this->resultAlreadyReceived($result)){
-				$already_received = true;
-			}
-			
-			$has_transaction_uid      = false;
-			
-			if(!$this->lockHOrderUpdate($result["order_uid"])){
-				$error = __('HPAY can not lock the order!', 'holestpay');
-				$order->add_order_note( $error  );
-				$hpay_doing_order_update = false;
-				return $error;
-			}
-			
-			if(isset($result["status"])){
-				$order->update_meta_data("_hpay_status_prev",$order->get_meta("_hpay_status"));
-				$order->update_meta_data("_hpay_status", $result["status"]);
-			}
-			
-			$hpay_responses = $this->getHPayPayResponses($order);
-			
-			if(!$is_webhook){
-				hpay_write_log($hpay_log_file,"\r\n<!-- VERIFIED -->\r\n");
-			}
-			
-			$is_duplicate_response = false;
-			if(isset($result["transaction_uid"])){
-				if($result["transaction_uid"]){
-					$has_transaction_uid = true;
-				}
-				
-				foreach($hpay_responses as $prev_result){
-					if(isset($prev_result["transaction_uid"])){
-						if($prev_result["transaction_uid"] == $result["transaction_uid"]){
-							$is_duplicate_response = true;
-							break;
-						}
-					}
-				}
-			}else{
-				$is_duplicate_response = false;
-				$result["transaction_uid"] = "";
-				foreach($hpay_responses as $ind => $prev_resp){
-					if(isset($prev_resp["transaction_uid"])){
-						if($prev_resp["transaction_uid"]){
-							continue;
-						}
-					}
-					unset($hpay_responses[$ind]);
-				}
-			}
-			
-			$hmethod = HPay_Core::payment_method_instance($pmethod_id);
-		
-			$no_tokens = false;
-			if($hmethod){
-				$no_tokens = $hmethod->tokenisation_disallowed();
-			}
-			
-			if($is_duplicate_response){
-				hpay_write_log($hpay_log_file,"<!-- DUPLICATE PREV RESPONSES: " . json_encode($hpay_responses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-			}
-			
-			$order->set_payment_method($hmethod ? $hmethod : $pmethod_id);
-			$order->save();
-			
-			//hpay_write_log("trace", array($order_id, "acceptResult:acceptResponseFiscalAndShipping",$result));
-				
-			$has_integ_or_ship_update = $this->acceptResponseFiscalAndShipping($order_id,$result);
-			
-			if($already_received && !$order->has_status( 'pending' )){
-				$this->unlockHOrderUpdate($result["order_uid"]);
-				return true;
-			}
-			
-			if(!$is_duplicate_response){
-				if(!$is_webhook){
-					hpay_write_log($hpay_log_file, "\r\n<!-- ACCEPTED STORAGE -->\r\n", FILE_APPEND);
-				}
-				
-				if($has_integ_or_ship_update || $has_transaction_uid){
-					$hpay_responses[] = $result;
-					$this->setHPayPayResponses($order, $hpay_responses, false);
-				}
-				
-				$return_result = true;
-				if(strpos($result["status"],"SUCCESS") !== false || strpos($result["status"],"PAID") !== false || strpos($result["status"],"RESERVED") !== false || strpos($result["status"], "AWAITING") !== false){
-					
-					if(!$is_webhook){
-						hpay_write_log($hpay_log_file, "\r\n<!-- acceptResult PAID/SUCCESS/RESERVED/AWAITING -->\r\n", FILE_APPEND);
-					}
-				
-					$clear_cart = true; 
-					if(!$no_tokens && isset($result["vault_token_uid"])){
-						if($result["vault_token_uid"]){
-							if(strlen($result["vault_token_uid"]) >= 10){
-								$customer_user_id  = $order->get_user_id();
-								$merchant_site_uid = $this->getSetting("merchant_site_uid","");
-								
-								$tlng = "en";
-								if(isset($result["hpaylang"])){
-									$tlng = $result["hpaylang"];
-								}
-								if($hmethod){
-									WC_Payment_Token_HPay::create_hpay_token($customer_user_id, $merchant_site_uid, $hmethod->hpay_method_type(), $result["vault_card_brand"], $result["vault_card_umask"], $result["vault_token_uid"], $result["vault_scope"], $result["vault_onlyforuser"], $tlng);
-								}
-							}
-						}
-					}
-					
-					$order->add_order_note( __('HPAY payment completed', 'holestpay') . " " . $result["transaction_uid"] );
-					
-					global $hpay_doing_order_store;
-					if(!$hpay_doing_order_store){
-						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
-							
-							if(!$is_webhook){
-								hpay_write_log($hpay_log_file, "\r\n<!-- maybe set status | hpay payment method resp: {$result["status"]}-->\r\n", FILE_APPEND);
-							}
-							
-							$wc_ostat = $this->shouldSetStatus($result, $order);
-							if($wc_ostat){
-								if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat)){
-									if(!$is_webhook){
-										hpay_write_log($hpay_log_file, "\r\n<!-- status set for hpay payment method resp: {$wc_ostat}-->\r\n", FILE_APPEND);
-									}
-									$this->setOrderStatus($order,$wc_ostat);	
-								}
-							}
-							
-							if(strpos($result["status"],"SUCCESS") !== false || strpos($result["status"],"PAID") !== false){
-								//payment_complete must be called after status set!!!
-								$order->payment_complete($result["transaction_uid"]);
-							}else if (strpos($result["status"],"RESERVED") !== false || strpos($result["status"],"AWAITING") !== false){
-								//
-							}
-						}else{
-							if(!$is_webhook){
-								hpay_write_log($hpay_log_file, "\r\n<!-- maybe set status | non-hpay payment method resp: {$result["status"]}-->\r\n", FILE_APPEND);
-							}
-							$wc_ostat = $this->shouldSetStatusBecauseOfDelivery($result, $order);
-							if($wc_ostat){
-								if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat)){
-									if(!$is_webhook){
-										hpay_write_log($hpay_log_file, "\r\n<!-- status set for non-hpay payment method resp: {$wc_ostat}-->\r\n", FILE_APPEND);
-									}
-									$this->setOrderStatus($order,$wc_ostat);	
-								}
-							}
-						}
-					}
-				}else{
-					global $hpay_doing_order_store;
-					if(!$hpay_doing_order_store){
-						if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
-							$wc_ostat = $this->shouldSetStatus($result, $order);
-							if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat)){
-								$this->setOrderStatus($order,'failed', __( 'HPAY payment failed', 'holestpay' ) . " " . $result["transaction_uid"]);
-							}
-						}
-					}
-				}
-			}else{
-				global $hpay_doing_order_store;
-				if(!$hpay_doing_order_store){
-					if(stripos($order->get_payment_method(),"hpaypayment-") !== false){
-						$wc_ostat = $this->shouldSetStatus($result, $order);
-						if($wc_ostat){
-							if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat))
-								$this->setOrderStatus($order,$wc_ostat);	
-						}
-						if(!$order->is_paid() && (strpos($result["status"],"SUCCESS") !== false || strpos($result["status"],"PAID") !== false)){
-							//payment_complete must be called after status set!!!
-							$order->payment_complete($result["transaction_uid"]);
-						}
-					}else{
-						$wc_ostat = $this->shouldSetStatusBecauseOfDelivery($result, $order);
-						if($wc_ostat){
-							if(!$order->has_status($wc_ostat) && !$this->wc_order_has_status_immediate($order->get_id(), $wc_ostat))
-								$this->setOrderStatus($order,$wc_ostat);	
-						}
-					}
-				}
-			}
-			
-			$order->save_meta_data();
-			
-			$this->unlockHOrderUpdate($result["order_uid"]);
-			$hpay_doing_order_update = false;
-			
-			if($reshash){
-				$result = array(
-					'success'           => true,
-					"order_id"          => $order->get_id(),
-					'order_site_status' => $this->wc_order_status_immediate($order->get_id())
-				);
-				try{
-					if(function_exists('set_transient'))
-						set_transient("hpayresp_" . $reshash, $result, 300);
-				}catch(Throwable $tex){
-					hpay_write_log("error", $tex);
-				}
-			}
+
+		$res = $this->onOrderUpdate($result,$order);
+
+		if($res && isset($res["success"]) && $res["success"]){
 			return true;
+		}else if($res && isset($res["message"])){
+			return $res["message"];
 		}else{
-			$error = __('HPAY response rejected due incorrect verification string!', 'holestpay') . " REF: " . $result["transaction_uid"];
-			$order->add_order_note( $error  );
-			$hpay_doing_order_update = false;
-			return $error;
+			return false;
 		}
-*/
     }
-
-    
-
 }

@@ -17,7 +17,7 @@ class FileSystemLogProvider extends HolestPayAbstractLogProvider{
  
     /**
      * Provider constructior. You should never call this constructor yourself. HolestPayLib will call it internaly, and you only set log_provider_class lig configuration parameter to this file name / class name (file name and class name must be same)
-     * @param assoc_array $lib_configuration - library configuration
+     * @param array (assoc) $lib_configuration - library configuration
      */
      public function __construct($lib_configuration){
         $this->lib_configuration = $lib_configuration;
@@ -92,13 +92,14 @@ class FileSystemLogProvider extends HolestPayAbstractLogProvider{
         $elogs = array();
         try{
             if($this->lib_configuration){
+
+                $this->cleanOutdated();
+
                 $files = array_unique(glob($this->lib_configuration["log_provider_folder"] ."/*error.log"));
                
                 foreach ($files as $file) {
                     if (is_file($file)) {
-                        if ($threshold <= filemtime($file)) {
-                            $elogs[basename($file)] = @file_get_contents($file);
-                        }
+                         $elogs[basename($file)] = @file_get_contents($file);
                     }
                 }
             }

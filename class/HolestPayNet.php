@@ -55,7 +55,7 @@ trait HolestPayNet{
 /**
  * Performs HTTP request
  * @param string $url - source url
- * @param assoc_array? $http_request - array("method" => "POST|PUT|...", "headers" => array("Content-Type" => "application/json",...), "blocking" => true|fallse, "body" => ..., "timeout" => 25 )
+ * @param array (assoc)? $http_request - array("method" => "POST|PUT|...", "headers" => array("Content-Type" => "application/json",...), "blocking" => true|fallse, "body" => ..., "timeout" => 25 )
  * @return \holestpay\NetResponse
  */
     public static function fetch($url, $http_request = false)
@@ -127,7 +127,7 @@ trait HolestPayNet{
     /**
      * adds query parameter to url
      * @param string $url - url to add QS parm to
-     * @param string|array_assoc $param_name_or_assocd - if you are adding single parameter then its name othervise name|value assoc array
+     * @param string|array (assoc) $param_name_or_assocd - if you are adding single parameter then its name othervise name|value assoc array
      * @param string $param_value - only if you are adding single parameter - then parameter value
      * @return string - url with QS parameter(s) added
      */

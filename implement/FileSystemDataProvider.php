@@ -26,7 +26,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
  
  /**
    * Provider constructior. You should never call this constructor yourself. HolestPayLib will call it internaly, and you only set data_provider_class lig configuration parameter to this file name / class name (file name and class name must be same)
-   * @param assoc_array $lib_configuration - library configuration
+   * @param array (assoc) $lib_configuration - library configuration
    */
   public function __construct($lib_configuration){
     $this->lib_configuration = $lib_configuration;
@@ -175,7 +175,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
   }
 
 /**
- * writes current user displayable payment information for order as HTML (may contain multiple responses)
+ * writes current user-displayable payment information for order as HTML (may contain multiple responses)
  * 
  * @param string $order_uid - order unique identifikator
  * @param string $html - html (use at lest mediumtext for DB!)
@@ -188,7 +188,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
  }
 
 /**
- * writes current user displayable fiscal or integration methods (for mutiple methods output is combined) information for order as HTML 
+ * writes current user-displayable fiscal or integration methods (for mutiple methods output is combined) information for order as HTML 
  * 
  * @param string $order_uid - order unique identifikator
  * @param string $html - html (use at lest mediumtext for DB!)
@@ -201,7 +201,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
   }
 
 /**
- * writes current user displayable shipping method  (for mutiple methods output is combined)  information for order as HTML 
+ * writes current user-displayable shipping method  (for mutiple methods output is combined)  information for order as HTML 
  * 
  * @param string $order_uid - order unique identifikator
  * @param string $html - html (use at lest mediumtext for DB!)
@@ -213,8 +213,40 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
     )) > 0;
   }
 
+ /**
+ * writes current fiscal or integration methods (for mutiple methods output is combined) data for order
+ * 
+ * @param string $order_uid - order unique identifikator
+ * @param array (assoc) - data to write
+ * @return bool - true on success , false on failure
+ */
+ public function writeFiscalOrIntegrationData($order_uid, $data){
+  if($data && !empty($data)){
+    return $this->mergeJsonToPath("/orders/{$order_uid}/data.json", array(
+      "FiscalResponseData" => $data
+    )) > 0;
+  }else
+    return false;
+ } 
+
 /**
- * gets current user displayable payment information for order as HTML. Empty if does not exists 
+ * writes current shipping method  (for mutiple methods output is combined) data for the order 
+ * 
+ * @param string $order_uid - order unique identifikator
+ * @param array (assoc) $data - data to write
+ * @return bool - true on success , false on failure
+ */
+ public function writeShippingData($order_uid, $data){
+  if($data && !empty($data)){
+    return $this->mergeJsonToPath("/orders/{$order_uid}/data.json", array(
+      "ShippingResponseData" => $data
+    )) > 0;
+  }else
+    return false;
+ } 
+
+/**
+ * gets current user-displayable payment information for order as HTML. Empty if does not exists 
  * 
  * @param string $order_uid - order unique identifikator
  * @return string - current HTML for payment info. Empty if nothing exists 
@@ -227,7 +259,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
   }
 
 /**
- * gets current user displayable fiscal or integration methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
+ * gets current user-displayable fiscal or integration methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
  * 
  * @param string $order_uid - order unique identifikator
  * @return string - current HTML for fiscal or integration methods information info. Empty if nothing exists
@@ -240,7 +272,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
   }
 
 /**
- * gets current user displayable shipping methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
+ * gets current user-displayable shipping methods information (for mutiple methods output is combined) for order as HTML. Empty if nothing exists 
  * 
  * @param string $order_uid - order unique identifikator
  * @return string- current HTML for shipping methods information info. Empty if nothing exists
@@ -252,6 +284,34 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
     return "";
   }
 
+
+/**
+ * gets current fiscal or integration methods (for mutiple methods output is combined) data for order
+ * 
+ * @param string $order_uid - order unique identifikator
+ * @return array (assoc) - current fiscal or integration methods data for order
+ */
+public function getFiscalOrIntegrationData($order_uid){
+  $order = $this->loadJsonFromPath("/orders/{$order_uid}/data.json");
+  if(isset($order["FiscalResponseData"]))
+    return $order["FiscalResponseData"] ?? array();
+  return array();
+}  
+
+
+/**
+ * gets current shipping methods (for mutiple methods output is combined) data for order. 
+ * 
+ * @param string $order_uid - order unique identifikator
+ * @return array (assoc) - shipping methods data for order
+ */
+public function getShippingData($order_uid){
+  $order = $this->loadJsonFromPath("/orders/{$order_uid}/data.json");
+  if(isset($order["ShippingResponseData"]))
+    return $order["ShippingResponseData"] ?? array();
+  return array();
+}  
+
 /**
  * writes excahnge rate and its timestamp to cache 
  * 
@@ -259,7 +319,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
  * @param string[3] $to - uppercase 3 letter code of destination currency like EUR, USD, RSD, BAM, MKD,...
  * @param float|array $rate - raw convestion rate, or array("rate" => 0.322234, "ts" => time())
  * @param int $ts - time of rate as php timestamp (time() function)
- * @return assoc_array array("rate" => 0.322234, "ts" => time())
+ * @return array (assoc) array("rate" => 0.322234, "ts" => time())
  */
   public function cacheExchnageRate($form, $to, $rate, $ts = null){
 
@@ -280,7 +340,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
  * 
  * @param string[3] $form - uppercase 3 letter code of source currency like EUR, USD, RSD, BAM, MKD,...
  * @param string[3] $to - uppercase 3 letter code of destination currency like EUR, USD, RSD, BAM, MKD,...
- * @return assoc_array array("rate" => 0.322234, "ts" => time())
+ * @return array (assoc) array("rate" => 0.322234, "ts" => time())
  */
   public function readExchnageRate($form, $to){
     return $this->loadJsonFromPath("/exchange_rates/{$form}{$to}.json", null);
@@ -313,7 +373,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
 /**
  * appends received result from HolestPay to data storage (existing & new). Function should check if result is already recived and skip writting in that case or better overwrite previous
  * @param string $order_uid - order unique identifikator
- * @param assoc_array $result - most recent result
+ * @param array (assoc) $result - most recent result
  * @return bool - true if write happened , false on skip
  */
   public function appendResultForOrder($order_uid, $result){
@@ -327,7 +387,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
  /**
  * updates your site order based on current HPay result. Lib will call this method after all other methods it may call all executed. If you create this order in this moment you may keep order method write operations in memory untill this method is called
  * @param string $order_uid - order unique identifikator
- * @param assoc_array $order - most recent result  
+ * @param array (assoc) $order - most recent result  
  * @return - true on success , false on failure
  */
   public function updateOrder($order_uid, $order){
@@ -367,8 +427,9 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
 
  /**
  * HPay tries to deliver result to your site in few ways. If result has already been accepted you don't need to accept it again. You use md5(verificationhash) or md5(vhash) to get unique result identification. See hpay status specification ib readme.MD
+ * @param string $order_uid - order unique identifikator
  * @param string $result_md5_hash. Usualy calculated as md5(verificationhash) or md5(vhash)
- * @return bool - true if result was already accepted otherwise false.  
+ * @return array|bool - outcome data if result was already accepted otherwise false. It will return true if process that first started to handle result is still executing 
  */
   public function resultAlreadyReceived($order_uid, $result_md5_hash){
     $exists = file_exists($this->getFullPath("/orders/{$order_uid}/results_hash/{$result_md5_hash}.rec", false));
@@ -377,15 +438,39 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
       $this->writeJsonToPath("/orders/{$order_uid}/results_hash/{$result_md5_hash}.rec",array(
         "ts" => time()
       ));
+    }else{
+      $resultReceivedSave = $this->loadJsonFromPath("/orders/{$order_uid}/results_hash/{$result_md5_hash}.rec");  
+      if(isset($resultReceivedSave["data"])){
+        return $resultReceivedSave["data"];
+      }else{
+        return true;
+      }
     }
     return $exists;
   }
+
+/**
+ * HPay tries to deliver result to your site in few ways. Process that passed resultAlreadyReceived check(one that got to handle result first) shoud save outcome with this function
+ * @param string $order_uid - order unique identifikator
+ * @param string $result_md5_hash. Usualy calculated as md5(verificationhash) or md5(vhash)
+ * @param array $outcome_data - (assoc) response to save  
+ * @return bool - true if saved.  
+ */
+ public function resultReceivedSave($order_uid, $result_md5_hash, $outcome_data){
+  $exists = file_exists($this->getFullPath("/orders/{$order_uid}/results_hash/{$result_md5_hash}.rec", false));
+  
+    //ONLY FIRST ONE WINS
+  return $this->writeJsonToPath("/orders/{$order_uid}/results_hash/{$result_md5_hash}.rec",array(
+      "ts" => time(),
+      "data" => $outcome_data
+    )) > 0;
+}
   
 /**
  * gets HPay status. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default its string, but you may get it as array is you set second prameter as true. In that case you will get array like this array("PAYMENT" => "--PAYMENT_STATUS--", "FISCAL" => array("method1_uid" => array("status1" => "status1_val"), "SHIPPING" => array("method1_uid" => array("status1" => "status1_val"))  ). See hpay status specification ib readme.MD
  * @param string $order_uid - order unique identifikator
  * @param array $as_array - parse reurn value as array
- * @return string|assoc_array - HPAY status as string or prased if $as_array == true. If parsed reurned array will always have "PAYMENT","FISCAL" and "SHIPPING" keys. If there is nothing their value willl be null 
+ * @return string|array (assoc) - HPAY status as string or prased if $as_array == true. If parsed reurned array will always have "PAYMENT","FISCAL" and "SHIPPING" keys. If there is nothing their value willl be null 
  */
   public function getOrderHPayStatus($order_uid, $as_array = false){
     $order = $this->loadJsonFromPath("/orders/{$order_uid}/data.json");
@@ -395,9 +480,9 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
   }
 
 /**
- * sets to HPay status for order. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default all is placed in single string. You can pass assoc_array for value to indicate only update of "PAYMENT","FISCAL" and "SHIPPING" part like array("PAYMENT" => "PAID"). Function needs to preseve all previous and just add updated statuses (once added status for anything can not just dissapear).  
+ * sets to HPay status for order. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default all is placed in single string. You can pass array (assoc) for value to indicate only update of "PAYMENT","FISCAL" and "SHIPPING" part like array("PAYMENT" => "PAID"). Function needs to preseve all previous and just add updated statuses (once added status for anything can not just dissapear).  
  * @param string $order_uid - order unique identifikator
- * @param strinh|assoc_array $hpay_status - full hpay_status as string in its format. Partial status as string for payment or/and fiscal or/and integration or/and shipping metods. Once ste status for some method can not dissapear it can only change value.
+ * @param strinh|array (assoc) $hpay_status - full hpay_status as string in its format. Partial status as string for payment or/and fiscal or/and integration or/and shipping metods. Once ste status for some method can not dissapear it can only change value.
  * @return string - full HPAY status in string form for order in HPay status format
  */
   public function setOrderHPayStatus($order_uid, $hpay_status){
@@ -407,18 +492,23 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
       $status = $order["HPayStatus"];
     }
 
+    $status_prev = $status;
     $status = HolestPayLib::instance()->mergeHPayStatus($status,$hpay_status);
 
-    return $this->mergeJsonToPath("/orders/{$order_uid}/data.json",array(
-      "HPayStatus" => $status
-    ));
+    if($status_prev != $status){
+      return $this->mergeJsonToPath("/orders/{$order_uid}/data.json",array(
+        "HPayStatus" => $status,
+        "HPayStatusPrev" => $status_prev
+      ));
+    }
+    
     return $status;
   }
 
 /**
  * FOR THIS PROVIDER ASSUMED SAME AS HPAY REQUEST(you probably need a different implementation that converts your order to HPay format). Gets HPay order in HolestPay format eather from $order_uid or full site order object 
  * @param string|Order $order_uid_or_site_order - $order_uid to read from data storage or full order object from site to convert to HPay Order
- * @return assoc_array - HPAY Order
+ * @return array (assoc) - HPAY Order
  */
   public function getHOrder($order_uid_or_site_order){
     if(is_array($order_uid_or_site_order))
@@ -430,7 +520,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
 /**
  * gets HPay cart in HolestPay format eather from $order_uid or full site order or chart object 
  * @param string|Order|Cart $order_uid_or_site_order_or_site_cart - $order_uid to read from data storage or full order object from site to convert to HPay Cart or site Cart object to HPay Cart
- * @return assoc_array - HPAY Order
+ * @return array (assoc) - HPAY Order
  */  
   public function getHCart($site_cart){
     return $this->getHOrder($site_cart);//for this provider we assume same as HPay request native format. You probably need to convert your site order to hpay order 
@@ -439,7 +529,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
 /**
 * gets array of vault references for user to be used for charge or presented user to choose from. $user_uid is usually email. 
 * @param string $user_uid - user identifier / usually email
-* @return assoc_array - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
+* @return array (assoc) - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
 */ 
   public function getVaultReferences($user_uid){
     return $this->loadJsonFromPath("/users/{$user_uid}/vault.json");
@@ -448,7 +538,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
 /**
 * adds vault references for user to be used for future charges. $user_uid is usually email.
 * @param string $user_uid - user identifier / usually email
-* @param assoc_array - vault references data array. Basides value it ,may contain masked pan, last use time, method for which its valid for 
+* @param array (assoc) - vault references data array. Basides value it ,may contain masked pan, last use time, method for which its valid for 
 * @return bool - true on success , false on failure
 */   
   public function addVaultReference($user_uid, $vault_data){
@@ -494,7 +584,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
 * updates vault reference by its value 
 * @param string $user_uid - user identifier / usually email
 * @param string $vault_token_uid - value of vault reference pointer itself
-* @param assoc_array $vault_data - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
+* @param array (assoc) $vault_data - vault reference data. Basides value it ,may contain masked pan, last use time, method for which its valid for
 * @return bool - true on success, false on failure
 */  
   public function updateVaultReference($user_uid, $vault_token_uid, $vault_data){
@@ -566,7 +656,7 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
 
   /**
    * loads site HPay configuration from permanent data storage
-   * @return assoc_array - HPay site configuration
+   * @return array (assoc) - HPay site configuration
    */
   public function loadSiteConfiguration(){
     return $this->loadJsonFromPath("/site_config.json", null);
@@ -574,12 +664,15 @@ class FileSystemDataProvider extends HolestPayAbstractDataProvider{
 
   /**
    * writes site HPay configuration to permanent data storage
-   * @param string|assoc_array $site_configuration - configuration to set including POS setup. If string it will be JSON deserialized. If you use single filed for it in DB make sure it can accept large amount of data. At least mediumtext
-   * @return assoc_array - Site configuration that was set
+   * @param string|array (assoc) $site_configuration - configuration to set including POS setup. If string it will be JSON deserialized. If you use single filed for it in DB make sure it can accept large amount of data. At least mediumtext
+   * @return array (assoc) - Site configuration that was set
    */
   public function setSiteConfiguration($site_configuration){
     $this->writeJsonToPath("/site_config.json", $site_configuration);
   }
+
+
+ 
 
 
 }

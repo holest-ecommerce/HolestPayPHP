@@ -76,7 +76,7 @@ trait HolestPaySign{
 
     /**
      * Adds verificationhash signature to alraedy prepared request data to send
-     * @param assoc_array $data - prepared data for request
+     * @param array (assoc) $data - prepared data for request
      */
     public function signRequestData(& $data){
         if(!$data)

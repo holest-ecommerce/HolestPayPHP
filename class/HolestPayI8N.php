@@ -20,7 +20,7 @@ class HolestPayDefaultTranslation extends HolestPayAbstractTranslationProvider{
 
     /**
      * Provider constructior. You should never call constructor of exteneded provider class yourself. HolestPayLib will call it internaly, and you only set translation_provider_class lib configuration parameter to provider class (extended from this)  file name / class name (file name / class name must be same)
-     * @param assoc_array $lib_configuration - library configuration
+     * @param array (assoc) $lib_configuration - library configuration
      */
     public function __construct($lib_configuration){
         $this->lib_configuration = $lib_configuration;

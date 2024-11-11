@@ -15,6 +15,7 @@ if(!defined('HOLESTPAYLIB')){
 	define('HOLESTPAYLIB',__FILE__);
 
     require_once(__DIR__ . "/defines.php");
+    require_once(__DIR__ . "/holestpay_common.php");
 
     require_once(__DIR__ . "/class/HolestPayCore.php");
     require_once(__DIR__ . "/class/HolestPayConversion.php");
@@ -199,7 +200,7 @@ if(!defined('HOLESTPAYLIB')){
                         } 
                     }
                 }else if(is_array($config)){
-                    $cfg_source = '$config param - assoc_array';
+                    $cfg_source = '$config param - array (assoc)';
                     $cfg = $config;
                 }else if(is_object($config)){
                     $cfg_source = '$config param - object';
