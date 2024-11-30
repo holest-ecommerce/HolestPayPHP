@@ -100,7 +100,6 @@ trait HolestPayCore{
             }catch(Throwable $ex){
                 HolestPayLib::writeLog("error",$ex->getMessage(),7);
             }
-            $this->webHooksHandler();
         }
         $this->_webResultHandlerCalled = true;
     }

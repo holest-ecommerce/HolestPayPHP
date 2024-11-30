@@ -122,6 +122,20 @@ if(!defined('HOLESTPAYLIB')){
             return self::$_config;
         }
 
+        /**
+         * returns current lib configuration parameter value by name
+         * @param any $name - name of parameter
+         * @param any $data - default value if parameter is not defined
+         * @return any
+         */
+        public static function libConfigParam($name, $default = null){
+            if(isset(self::$_config)){
+                if(isset(self::$_config[$name])){
+                    return self::$_config[$name];
+                }    
+            }
+            return $default;
+        }
 
         /**
          * @param string $logscope - can be just "error"|"waring"|"log" or something like "order_4635764_result"
