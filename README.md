@@ -19,14 +19,18 @@ required PHP modules: php-curl (php-curl is usually there by default on linux, o
 Possible payment status:
     SUCCESS
     PAID
+	PAYING
     AWAITING (waiting bank trasfer for example)
     REFUNDED
     PARTIALLY-REFUNDED
     VOID
+	OVERDUE
     RESERVED (amount is reserved but still not captured from the buyer card)
     EXPIRED (used with methods that have expiration)
     OBLIGATED (same as AWAITING but when services delivery for customer has started or there is legal maen to garantee payment will happen)
     REFUSED
+	FAILED
+	CANCELED
 ```
  PAYMENT:payment_status - may not exist if HolestPay payment module is not used and you don't set it explicitly     
 
@@ -47,8 +51,7 @@ Possible packet shipping status:
     ERROR - error in currier api request
     RESOLVING - shipping address (or something else) needs attention from backend
     FAILED - delivery permanently failed, or currier API refused the request
-    CANCELED - explicitly canceled by buyer or company
-    
+    REVOKED - explicitly canceled by buyer or company
 ```
     Shipping statuses will exists only there are packets handled by HPay shipping modules
 

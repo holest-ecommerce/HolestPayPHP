@@ -27,8 +27,8 @@ if(!defined('HOLESTPAYLIB')){
     require_once(__DIR__ . "/class/HolestPayAPI.php");
     
     class HolestPayLib{
-        public static $PAY_STATUSES = array("SUCCESS","PAID", "AWAITING", "REFUNDED", "PARTIALLY-REFUNDED","VOID", "RESERVED", "EXPIRED", "OBLIGATED", "REFUSED");
-        public static $SHIPPING_PACKET_STATUSES = array("PREPARING", "READY", "SUBMITTED", "DELIVERY", "DELIVERED", "ERROR", "RESOLVING", "FAILED", "CANCELED");
+        public static $PAY_STATUSES = array("SUCCESS","PAID","PAYING","OVERDUE","AWAITING", "REFUNDED", "PARTIALLY-REFUNDED","VOID", "RESERVED", "EXPIRED", "OBLIGATED","FAILED", "REFUSED","CANCELED");
+        public static $SHIPPING_PACKET_STATUSES = array("PREPARING", "READY", "SUBMITTED", "DELIVERY", "DELIVERED", "ERROR", "RESOLVING", "FAILED", "REVOKED");
 
         private static $_instance = null;
         private static $_config = null;
