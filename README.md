@@ -17,9 +17,9 @@ required PHP modules: php-curl (php-curl is usually there by default on linux, o
 
 ```shell
 Possible payment status:
-    SUCCESS
+    SUCCESS (alias of PAID)
     PAID
-	PAYING
+	PAYING (partialy paid, indicates all partial payments are on time, used for advance payments or for multi source payments like you pay one part with one card / other part with other card or when large amount is split to be paid in parts)
     AWAITING (waiting bank trasfer for example)
     REFUNDED
     PARTIALLY-REFUNDED
