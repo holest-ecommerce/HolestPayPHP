@@ -467,10 +467,10 @@ public function getShippingData($order_uid){
 }
   
 /**
- * gets HPay status. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default its string, but you may get it as array is you set second prameter as true. In that case you will get array like this array("PAYMENT" => "--PAYMENT_STATUS--", "FISCAL" => array("method1_uid" => array("status1" => "status1_val"), "SHIPPING" => array("method1_uid" => array("status1" => "status1_val"))  ). See hpay status specification ib readme.MD
+ * gets HPay status. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default its string, but you may get it as array is you set second prameter as true. In that case you will get array like this array("PAYMENT" => "--PAYMENT_STATUS--", "INTEGR" => array("method1_uid" => array("status1" => "status1_val") , "FISCAL" => array("method1_uid" => array("status1" => "status1_val"), "SHIPPING" => array("method1_uid" => array("status1" => "status1_val"))  ). See hpay status specification ib readme.MD
  * @param string $order_uid - order unique identifikator
  * @param array $as_array - parse reurn value as array
- * @return string|array (assoc) - HPAY status as string or prased if $as_array == true. If parsed reurned array will always have "PAYMENT","FISCAL" and "SHIPPING" keys. If there is nothing their value willl be null 
+ * @return string|array (assoc) - HPAY status as string or prased if $as_array == true. If parsed reurned array will always have "PAYMENT","FISCAL","INTEGR" and "SHIPPING" keys. If there is nothing their value willl be null 
  */
   public function getOrderHPayStatus($order_uid, $as_array = false){
     $order = $this->loadJsonFromPath("/orders/{$order_uid}/data.json");
@@ -480,7 +480,7 @@ public function getShippingData($order_uid){
   }
 
 /**
- * sets to HPay status for order. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default all is placed in single string. You can pass array (assoc) for value to indicate only update of "PAYMENT","FISCAL" and "SHIPPING" part like array("PAYMENT" => "PAID"). Function needs to preseve all previous and just add updated statuses (once added status for anything can not just dissapear).  
+ * sets to HPay status for order. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default all is placed in single string. You can pass array (assoc) for value to indicate only update of "PAYMENT","FISCAL","INTEGR" and "SHIPPING" part like array("PAYMENT" => "PAID"). Function needs to preseve all previous and just add updated statuses (once added status for anything can not just dissapear).  
  * @param string $order_uid - order unique identifikator
  * @param strinh|array (assoc) $hpay_status - full hpay_status as string in its format. Partial status as string for payment or/and fiscal or/and integration or/and shipping metods. Once ste status for some method can not dissapear it can only change value.
  * @return string - full HPAY status in string form for order in HPay status format

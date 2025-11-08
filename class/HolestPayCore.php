@@ -627,10 +627,10 @@ trait HolestPayCore{
      }
 
     /**
-     * gets HPay status. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default its string, but you may get it as array is you set second prameter as true. In that case you will get array like this array("PAYMENT" => "--PAYMENT_STATUS--", "FISCAL" => array("method1_uid" => array("status1" => "status1_val"), "SHIPPING" => array("method1_uid" => array("status1" => "status1_val"))  ). See hpay status specification ib readme.MD
+     * gets HPay status. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default its string, but you may get it as array is you set second prameter as true. In that case you will get array like this array("PAYMENT" => "--PAYMENT_STATUS--", "INTEGR" => array("method1_uid" => array("status1" => "status1_val"), "FISCAL" => array("method1_uid" => array("status1" => "status1_val"), "SHIPPING" => array("method1_uid" => array("status1" => "status1_val"))  ). See hpay status specification ib readme.MD
      * @param string $order_uid - order unique identifikator
      * @param array $as_array - parse reurn value as array
-     * @return string|array (assoc) - HPAY status as string or prased if $as_array == true. If parsed reurned array will always have "PAYMENT","FISCAL" and "SHIPPING" keys. If there is nothing their value willl be null 
+     * @return string|array (assoc) - HPAY status as string or prased if $as_array == true. If parsed reurned array will always have "PAYMENT","FISCAL","INTEGR" and "SHIPPING" keys. If there is nothing their value willl be null 
      */
     public function getOrderHPayStatus($order_uid, $as_array = false){
         return HolestPayLib::dataProvider()->getOrderHPayStatus($order_uid, $as_array);
@@ -674,12 +674,12 @@ trait HolestPayCore{
     }
 
     /**
-     * extracts only HPay FISCAL&INTEGRATIOS status form full HPay status
+     * extracts only HPay FISCAL status form full HPay status
      * @param string $order_uid - order unique identifikator
      * @param string $full_status_string - pass full HPay status directly
      * @return array (assoc) - array("method1_uid" => method1_status ...)
      */
-    public function getOrderHPayFiscalAndIntegrationStatus($order_uid, $full_status_string = null){
+    public function getOrderHPayFiscalStatus($order_uid, $full_status_string = null){
         $hstatus = $full_status_string !== null ? $full_status_string : $this->getOrderHPayStatus($order_uid, false);
         if(stripos($hstatus,"_FISCAL:") !== false){
             $hstatus = trim($hstatus);
@@ -690,6 +690,31 @@ trait HolestPayCore{
             foreach($hstatus as $tstat){
                 if(stripos($tstat,"_FISCAL:") !== false){
                     $tstat = explode("_FISCAL:",$tstat);
+                    $fi_stat[trim($tstat[0])] = trim($tstat[1]);
+                }
+            }
+            return $fi_stat;
+        }
+        return array();
+    }
+	
+	/**
+     * extracts only HPay INTEGRATIOS status form full HPay status
+     * @param string $order_uid - order unique identifikator
+     * @param string $full_status_string - pass full HPay status directly
+     * @return array (assoc) - array("method1_uid" => method1_status ...)
+     */
+    public function getOrderHPayIntegrationsStatus($order_uid, $full_status_string = null){
+        $hstatus = $full_status_string !== null ? $full_status_string : $this->getOrderHPayStatus($order_uid, false);
+        if(stripos($hstatus,"_INTEGR:") !== false){
+            $hstatus = trim($hstatus);
+            $hstatus = str_replace("  "," ",$hstatus);
+            $hstatus = str_replace("  "," ",$hstatus);
+            $hstatus = explode(" ",$hstatus);
+            $fi_stat = array();
+            foreach($hstatus as $tstat){
+                if(stripos($tstat,"_INTEGR:") !== false){
+                    $tstat = explode("_INTEGR:",$tstat);
                     $fi_stat[trim($tstat[0])] = trim($tstat[1]);
                 }
             }
@@ -739,7 +764,8 @@ trait HolestPayCore{
     public function parseHStatus($hpay_status){
         return array(
             "PAYMENT"  => $this->getOrderHPayPayStatus(null, $hpay_status),
-            "FISCAL"   => $this->getOrderHPayFiscalAndIntegrationStatus(null, $hpay_status),
+            "FISCAL"   => $this->getOrderHPayFiscalStatus(null, $hpay_status),
+			"INTEGR"   => $this->getOrderHPayIntegrationsStatus(null, $hpay_status),
             "SHIPPING" => $this->getOrderHPayShippingStatus(null, $hpay_status)
         );
     }
@@ -762,6 +788,16 @@ trait HolestPayCore{
                         if($status_full)
                             $status_full .= " ";
                         $status_full .= "{$method_uid}_FISCAL:{$f_status}";
+                    }
+                }
+            }
+			
+			if(isset($status_data["INTEGR"])){
+                foreach($status_data["INTEGR"] as $method_uid => $f_status){
+                    if($f_status){
+                        if($status_full)
+                            $status_full .= " ";
+                        $status_full .= "{$method_uid}_INTEGR:{$f_status}";
                     }
                 }
             }
@@ -822,7 +858,7 @@ trait HolestPayCore{
     }
 
     /**
-     * sets to HPay status for order. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default all is placed in single string. You can pass array (assoc) for value to indicate only update of "PAYMENT","FISCAL" and "SHIPPING" part like array("PAYMENT" => "PAID"). Function needs to preseve all previous and just add ou update statuses (once added status for anything can not just dissapear).  
+     * sets to HPay status for order. HPay status is composed of payment status and statuses for all fiscal, integration and shipping metods. By default all is placed in single string. You can pass array (assoc) for value to indicate only update of "PAYMENT","FISCAL","INTEGR" and "SHIPPING" part like array("PAYMENT" => "PAID"). Function needs to preseve all previous and just add ou update statuses (once added status for anything can not just dissapear).  
      * @param string $order_uid - order unique identifikator
      * @param strinh|array (assoc) $hpay_status - full hpay_status as string in its format. Partial status as string for payment or/and fiscal or/and integration or/and shipping metods. Once ste status for some method can not dissapear it can only change value.
      * @return string - full HPAY status in string form for order in HPay status format

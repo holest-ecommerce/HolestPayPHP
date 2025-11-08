@@ -8,7 +8,7 @@ required PHP modules: php-curl (php-curl is usually there by default on linux, o
 # HolestPay Order Status Format
 
 ```shell
-[PAYMENT:payment_status][ (fmethod1_uid)_FISCAL:(fmethod1_status) [(fmethod2_uid)_FISCAL:(fmethod2_status)]...][ (smethod1_uid)_SHIPPING:packet_no@shipping_status [(smethod2_uid)_SHIPPING:packet_no@shipping_status]...]
+[PAYMENT:payment_status][ (fmethod1_uid)_FISCAL:(fmethod1_status) [(fmethod2_uid)_FISCAL:(fmethod2_status)]...][ (imethod1_uid)_INTEGR:(imethod1_status) [(imethod2_uid)_INTEGR:(imethod2_status)]...][ (smethod1_uid)_SHIPPING:packet_no@shipping_status [(smethod2_uid)_SHIPPING:packet_no@shipping_status]...]
 ```
 
 * ORDER OF SUB-STATUSES SECTIONS PAYMENT -> FISCAL & INTEGRATION  ->  SHIPPING IS IMPORTANT! 
@@ -39,7 +39,7 @@ Possible fisal module status:
   - varies depending on module
     
 ```
-Fiscal statuses will exists only if fiscal/integration module add status at all and if it is executed
+Fiscal/Integration statuses will exists only if fiscal/integration module add status at all and if it is executed
 
 ```shell
 Possible packet shipping status: 
